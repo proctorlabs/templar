@@ -1,0 +1,18 @@
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+
+template = _{ SOI ~ (raw_block | template_block)+ ~ EOI }
+raw_block = @{ (!"{{" ~ ANY)+ }
+template_block = _{ "{{" ~ (!"}}" ~ expression) ~ "}}" }
+
+expression = _{ method | bool_lit | number_lit | string_lit }
+expression_args = _{ (expression ~ ("," ~ expression)*)? }
+
+value = { ident ~ ( "." ~ ident )* }
+method = { value ~ "(" ~ expression_args ~ ")" }
+bool_lit = _{ true_lit | false_lit }
+true_lit = { "true" }
+false_lit = { "false" }
+number_lit = @{ "-"? ~ ASCII_DIGIT+ }
+string_lit = ${ "'" ~ string_lit_chars ~ "'" }
+string_lit_chars = @{ (!"'" ~ ("\\'" | ANY))* }
+ident = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC*? }

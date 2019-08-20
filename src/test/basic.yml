@@ -1,0 +1,4 @@
+---
+somedict:
+  val1: value
+  val2: "{{ test() }}"
