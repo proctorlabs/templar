@@ -1,18 +1,53 @@
 WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
 
-template = _{ SOI ~ (raw_block | template_block)+ ~ EOI }
-raw_block = @{ (!"{{" ~ ANY)+ }
-template_block = _{ "{{" ~ (!"}}" ~ expression) ~ "}}" }
+//A whole template
+template = _{ SOI ~ (raw_block | template_block)* ~ EOI }
 
-expression = _{ method | bool_lit | number_lit | string_lit }
-expression_args = _{ (expression ~ ("," ~ expression)*)? }
+//Template expressions
+expression = _{ (all_lits | function | value) ~ filter* }
 
-value = { ident ~ ( "." ~ ident )* }
-method = { value ~ "(" ~ expression_args ~ ")" }
-bool_lit = _{ true_lit | false_lit }
-true_lit = { "true" }
-false_lit = { "false" }
+//Blocks
+raw_block      = @{ (!"{{" ~ ANY)+ }
+template_block = { "{{" ~ (!"}}" ~ expression) ~ "}}" }
+parens_block   = { "(" ~ (expression ~ ("," ~ expression)*)? ~ ")" }
+
+//Identifiers
+ident    = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC*? }
+value    = { ident ~ ( "." ~ ident )* }
+filter   = { "|" ~ ident ~ parens_block? }
+function = { ident ~ parens_block }
+
+//Literals
+all_lits   = _{ (bool_lit | number_lit | str_lit | null_lit) ~ !ASCII_ALPHANUMERIC }
+bool_lit   = _{ true_lit | false_lit }
+true_lit   = { "true" | "yes" }
+false_lit  = { "false" | "no" }
+null_lit   = { "null" | "nil" }
 number_lit = @{ "-"? ~ ASCII_DIGIT+ }
-string_lit = ${ "'" ~ string_lit_chars ~ "'" }
-string_lit_chars = @{ (!"'" ~ ("\\'" | ANY))* }
-ident = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC*? }
+
+//String literals
+str_lit   = ${ "'" ~ str_lit_c ~ "'" }
+str_lit_c = @{ (!"'" ~ ("\\'" | ANY))* }
+
+//Operators
+op  = _{ op_add | op_sub | op_div | op_mlt | op_mod }
+cmp = _{ op_and | op_or | op_not | op_eq | op_ne | op_gt | op_gte | op_lt | op_lte }
+
+//Math
+op_add = { "+" }
+op_sub = { "-" }
+op_div = { "/" }
+op_mlt = { "*" }
+op_mod = { "%" }
+
+//Logic
+op_trn = { "?" }
+op_and = { "&&" }
+op_or  = { "||" }
+op_not = { "!"  }
+op_eq  = { "==" }
+op_ne  = { "!=" }
+op_gt  = { ">"  }
+op_gte = { ">=" }
+op_lt  = { "<"  }
+op_lte = { "<=" }
