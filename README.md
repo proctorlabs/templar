@@ -1,3 +1,3 @@
-# templar
+# Templar: The configuration file templating framework for Rust
 
-Templating framework for Serde
+Templating framework for configurations.

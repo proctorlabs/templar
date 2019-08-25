@@ -1,7 +1,13 @@
 use crate::*;
+use serde::Deserialize;
 use std::collections::BTreeMap;
 
 const BASIC: &str = include_str!("basic.yml");
+
+#[derive(Deserialize)]
+struct Test {
+    Somedict: HashMap<String, Document>,
+}
 
 #[test]
 fn it_works() {

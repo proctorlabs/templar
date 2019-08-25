@@ -5,6 +5,7 @@ pub(crate) use error::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+pub use context::{SharedContext, StandardContext};
 pub use extensions::{Filter, Function, TemplarResult};
 pub use nodes::Node;
 pub use template::Template;
@@ -13,6 +14,7 @@ pub use unstructured::Document;
 #[cfg(test)]
 mod test;
 
+mod context;
 pub mod error;
 mod extensions;
 mod nodes;
@@ -44,12 +46,12 @@ impl Templar {
     }
 
     #[inline]
+    pub fn parse(&self, _: &Document) {}
+
+    #[inline]
     pub fn parse_str(&self, val: &str) -> Result<Template> {
         self.parse_template(val)
     }
-
-    #[inline]
-    pub fn parse_document(&self, _: &Document) {}
 
     #[inline]
     pub fn parse_json(&self) {}

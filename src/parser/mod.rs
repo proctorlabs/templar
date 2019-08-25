@@ -11,7 +11,8 @@ impl Templar {
         let tokens = TemplarParser::parse(Rule::template, input)
             .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?;
         let metadata = self.parse_raw(tokens)?;
-        Ok(metadata.into())
+        let result = Node::Expr(metadata);
+        Ok(result.into())
     }
 
     fn parse_raw(&self, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Vec<Node>> {
