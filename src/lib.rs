@@ -5,7 +5,7 @@ pub(crate) use error::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-pub use context::{SharedContext, StandardContext};
+pub use context::{Context, SharedContext, StandardContext};
 pub use extensions::{Filter, Function, TemplarResult};
 pub use nodes::Node;
 pub use template::Template;

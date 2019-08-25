@@ -14,7 +14,7 @@ pub enum Node {
 }
 
 impl Node {
-    pub(crate) fn exec(&self, ctx: &Document) -> Node {
+    pub(crate) fn exec(&self, ctx: &dyn Context) -> Node {
         match self {
             Self::Data(d) => Self::Data(d.clone()),
             Self::Expr(a) => {
@@ -34,11 +34,7 @@ impl Node {
                 }
             }
             Self::Value(a) => {
-                let mut temp = ctx;
-                for path in a.iter() {
-                    temp = &temp[path];
-                }
-                Self::Data(temp.clone())
+                Self::Data(ctx.get_path(&a.iter().map(|a| a).collect::<Vec<&String>>()))
             }
             Self::Filter(b) => {
                 let (piped, filter, args) = (&b.0, &b.1, &b.2);
@@ -66,7 +62,7 @@ impl Node {
         }
     }
 
-    pub fn render(&self, ctx: &Document) -> Result<String> {
+    pub fn render(&self, ctx: &dyn Context) -> Result<String> {
         Ok(format!("{}", self.exec(ctx).into_document()?))
     }
 }

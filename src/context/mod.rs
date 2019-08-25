@@ -44,6 +44,12 @@ impl Context for StandardContext {
     }
 }
 
+impl StandardContext {
+    pub fn new(initial_value: Document) -> Self {
+        StandardContext(Rc::new(RefCell::new(initial_value)))
+    }
+}
+
 // Disabling for now as I would like both contexts to have the same interface
 // std::ops::Deref
 // impl Deref for StandardContext {

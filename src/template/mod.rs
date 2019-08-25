@@ -5,8 +5,8 @@ use std::sync::Arc;
 pub struct Template(Arc<Node>);
 
 impl Template {
-    pub fn render(&self, ctx: &Document) -> Result<String> {
-        Ok(self.0.render(&ctx)?)
+    pub fn render(&self, ctx: &dyn Context) -> Result<String> {
+        Ok(self.0.render(ctx)?)
     }
 }
 
