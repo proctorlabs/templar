@@ -6,7 +6,7 @@ template = _{ SOI ~ (raw_block | template_block)* ~ EOI }
 //Template expressions
 expression = _{ (all_lits | function | value) ~ filter* }
 
-//Blocks
+//Blocks, containing templates or other chunks of data
 raw_block      = @{ (!"{{" ~ ANY)+ }
 template_block = { "{{" ~ (!"}}" ~ expression) ~ "}}" }
 parens_block   = { "(" ~ (expression ~ ("," ~ expression)*)? ~ ")" }

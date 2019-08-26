@@ -1,4 +1,4 @@
 ---
 somedict:
   val1: value
-  val2: "{{ 'Val' | lower }}"
+  val2: "{{ file('README.md') | split | index(0) }}"
