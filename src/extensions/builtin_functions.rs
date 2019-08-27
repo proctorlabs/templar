@@ -1,24 +1,48 @@
 use crate::*;
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
+use std::process::Command;
+use std::str;
 
-pub fn json(args: Result<Document>) -> Result<Document> {
-    Ok(Document::String(
-        serde_json::to_string(&args?).unwrap_or_default(),
-    ))
+pub fn json(args: TemplarResult) -> TemplarResult {
+    Ok(serde_json::from_str(&args?.to_string())?)
 }
 
-pub fn yaml(args: Result<Document>) -> Result<Document> {
-    Ok(Document::String(
-        serde_yaml::to_string(&args?).unwrap_or_default(),
-    ))
+pub fn yaml(args: TemplarResult) -> TemplarResult {
+    Ok(serde_yaml::from_str(&args?.to_string())?)
 }
 
-pub fn file(args: Result<Document>) -> Result<Document> {
+pub fn file(args: TemplarResult) -> TemplarResult {
     let path: PathBuf = args?.to_string().into();
-    let mut f = File::open(path).unwrap();
+    let mut f = File::open(path)?;
     let mut result = String::new();
-    f.read_to_string(&mut result).unwrap();
-    Ok(Document::String(result))
+    f.read_to_string(&mut result)?;
+    Ok(result.into())
+}
+
+pub fn env(args: TemplarResult) -> TemplarResult {
+    let env_name = args?.to_string();
+    Ok(std::env::var(env_name).unwrap_or_default().into())
+}
+
+pub fn shell(args: TemplarResult) -> TemplarResult {
+    let result = Command::new("/usr/bin/env")
+        .args(vec!["sh", "-c", &args?.to_string()])
+        .output()?;
+    let mut map = BTreeMap::<Document, Document>::new();
+    map.insert(
+        "stdout".into(),
+        str::from_utf8(&result.stdout).unwrap_or_default().into(),
+    );
+    map.insert(
+        "stderr".into(),
+        str::from_utf8(&result.stderr).unwrap_or_default().into(),
+    );
+    map.insert(
+        "status".into(),
+        result.status.code().unwrap_or_default().into(),
+    );
+    Ok(map.into())
 }

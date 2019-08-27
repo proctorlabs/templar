@@ -13,6 +13,12 @@ pub enum Node {
     Error(String),
 }
 
+impl Default for Node {
+    fn default() -> Self {
+        Node::Empty()
+    }
+}
+
 impl Node {
     pub(crate) fn exec(&self, ctx: &dyn Context) -> Node {
         match self {
@@ -72,6 +78,16 @@ impl From<Result<Document>> for Node {
         match doc {
             Ok(d) => Self::Data(d),
             Err(e) => Self::Error(format!("{:?}", e)),
+        }
+    }
+}
+
+impl From<Vec<Node>> for Node {
+    fn from(mut n: Vec<Node>) -> Node {
+        match n.len() {
+            1 => n.pop().unwrap(),
+            0 => Node::Empty(),
+            _ => Node::Expr(n),
         }
     }
 }

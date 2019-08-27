@@ -9,7 +9,7 @@ pub use {
         extensions::{Filter, Function, TemplarResult},
         nodes::Node,
         templar::*,
-        template::Template,
+        template::{Template, TemplateTree},
     },
     unstructured::Document,
 };

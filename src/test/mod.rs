@@ -1,4 +1,5 @@
 use crate::*;
+use std::convert::TryInto;
 
 const BASIC: &str = include_str!("basic.yml");
 
@@ -10,9 +11,21 @@ fn parse_yml_template() -> Result<()> {
         doc["one"]["two"]["three"] = "val".into();
         doc
     });
-    let result = template
-        .get_path(vec!["somedict", "val2"])?
-        .render(&context)?;
+    let tmpl: Template = template.get_path(&["somedict", "val2"]).try_into()?;
+    let result = tmpl.render(&context)?;
+    println!("Result: {}", result);
+    Ok(())
+}
+
+#[test]
+fn parse_expression_direct() -> Result<()> {
+    let tmpl = Templar::global().parse_expression(" one['two'].three | upper ")?;
+    let context = StandardContext::new({
+        let mut doc = Document::default();
+        doc["one"]["two"]["three"] = "val".into();
+        doc
+    });
+    let result = tmpl.render(&context)?;
     println!("Result: {}", result);
     Ok(())
 }

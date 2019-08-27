@@ -1,4 +1,6 @@
+pub use super::default_ops::*;
 use crate::*;
+use std::str;
 
 pub fn length(value: TemplarResult, _: TemplarResult) -> TemplarResult {
     match value? {
@@ -9,23 +11,50 @@ pub fn length(value: TemplarResult, _: TemplarResult) -> TemplarResult {
 }
 
 pub fn upper(value: TemplarResult, _: TemplarResult) -> TemplarResult {
-    Ok(Document::String(value?.to_string().to_uppercase()))
+    Ok(value?.to_string().to_uppercase().into())
 }
 
 pub fn lower(value: TemplarResult, _: TemplarResult) -> TemplarResult {
-    Ok(Document::String(value?.to_string().to_lowercase()))
+    Ok(value?.to_string().to_lowercase().into())
 }
 
 pub fn trim(value: TemplarResult, _: TemplarResult) -> TemplarResult {
-    Ok(Document::String(value?.to_string().trim().to_string()))
+    Ok(value?.to_string().trim().into())
+}
+
+pub fn base64(value: TemplarResult, args: TemplarResult) -> TemplarResult {
+    let switch = args?.to_string().to_lowercase();
+    match switch.as_ref() {
+        "decode" => Ok(str::from_utf8(
+            &base64::decode(&value?.to_string()).unwrap_or_else(|_| "".into()),
+        )
+        .unwrap_or_default()
+        .into()),
+        _ => Ok(base64::encode(&value?.to_string()).into()),
+    }
 }
 
 pub fn split(value: TemplarResult, args: TemplarResult) -> TemplarResult {
+    let delim = args?.as_string().unwrap_or_else(|| "\n".into());
+    Ok(match value? {
+        Document::String(s) => Document::Seq(s.split(&delim).map(|s| s.into()).collect()),
+        _ => Document::Seq(vec![]),
+    })
+}
+
+pub fn join(value: TemplarResult, args: TemplarResult) -> TemplarResult {
     let res;
     let delim = args?.as_string().unwrap_or_else(|| "\n".into());
     match value? {
-        Document::String(s) => res = Document::Seq(s.split(&delim).map(|s| s.into()).collect()),
-        _ => res = Document::Seq(vec![]),
+        Document::Seq(s) => {
+            res = s
+                .iter()
+                .map(|i| i.to_string())
+                .collect::<Vec<String>>()
+                .join(&delim)
+                .into()
+        }
+        v => res = v,
     }
     Ok(res)
 }
@@ -36,26 +65,38 @@ pub fn index(value: TemplarResult, args: TemplarResult) -> TemplarResult {
         .as_usize()
         .ok_or_else(|| TemplarError::RenderFailure("Cannot index with non real value".into()))?;
     match value? {
-        Document::Seq(s) => res = s[i].clone(),
+        Document::Seq(s) => res = s.get(i).cloned().unwrap_or_default(),
         _ => res = Document::Unit,
     }
     Ok(res)
 }
 
 pub fn json(value: TemplarResult, args: TemplarResult) -> TemplarResult {
-    let pretty = match args {
-        Ok(Document::String(s)) => s == "pretty",
-        _ => false,
-    };
-    Ok(Document::String(if pretty {
-        serde_json::to_string_pretty(&value?).unwrap_or_default()
+    let arg_string = args?.to_string();
+    Ok(if arg_string == "pretty" {
+        serde_json::to_string_pretty(&value?)
+            .unwrap_or_default()
+            .into()
     } else {
-        serde_json::to_string(&value?).unwrap_or_default()
-    }))
+        serde_json::to_string(&value?).unwrap_or_default().into()
+    })
 }
 
 pub fn yaml(value: TemplarResult, _: TemplarResult) -> TemplarResult {
-    Ok(Document::String(
-        serde_yaml::to_string(&value?).unwrap_or_default(),
-    ))
+    Ok(serde_yaml::to_string(&value?).unwrap_or_default().into())
+}
+
+pub fn string(value: TemplarResult, _: TemplarResult) -> TemplarResult {
+    Ok(value?.to_string().into())
+}
+
+pub fn key(value: TemplarResult, args: TemplarResult) -> TemplarResult {
+    Ok(match value? {
+        Document::Map(map) => map[&args?].clone(),
+        _ => {
+            return Err(TemplarError::RenderFailure(
+                "Attempted to retrieve a key on a value that is not a map".into(),
+            ))
+        }
+    })
 }
