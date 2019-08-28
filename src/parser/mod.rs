@@ -6,87 +6,89 @@ use pest_derive::*;
 #[grammar = "templar.pest"]
 struct TemplarParser;
 
-type Stack<'a> = (Vec<Node>, Option<&'a str>, &'a Templar);
+type Tree<'a> = (Vec<Node>, Option<&'a str>, &'a Templar);
 
 macro_rules! parse_token {
-    (number : $rule:expr => $stack:expr) => {
+    (number : $rule:expr => $tree:expr) => {
         parse_token!(push: Node::Data(
             $rule
                 .as_str()
                 .parse::<i64>()
                 .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?
                 .into(),
-        ) => $stack)
+        ) => $tree)
     };
-    (true => $stack:expr) => {
-        parse_token!(push: Node::Data(true.into()) => $stack)
+    (true => $tree:expr) => {
+        parse_token!(push: Node::Data(true.into()) => $tree)
     };
-    (false => $stack:expr) => {
-        parse_token!(push: Node::Data(false.into()) => $stack)
+    (false => $tree:expr) => {
+        parse_token!(push: Node::Data(false.into()) => $tree)
     };
-    (str ' ' : $rule:expr => $stack:expr) => {
-        parse_token!(push: Node::Data($rule.into_inner().as_str().replace("\\'", "'").into()) => $stack)
+    (str ' ' : $rule:expr => $tree:expr) => {
+        parse_token!(push: Node::Data($rule.into_inner().as_str().replace("\\'", "'").into()) => $tree)
     };
-    (nil => $stack:expr) => {
-        parse_token!(push: Node::Data(Document::Unit) => $stack)
+    (nil => $tree:expr) => {
+        parse_token!(push: Node::Data(Document::Unit) => $tree)
     };
 
-    (raw : $rule:expr => $stack:expr) => {
-        parse_token!(push: Node::Data($rule.as_str().into()) => $stack)
+    (raw : $rule:expr => $tree:expr) => {
+        parse_token!(push: Node::Data($rule.as_str().into()) => $tree)
     };
-    (parens : $rule:expr => $stack:expr) => {
-        parse_token!(push: $stack.2.parse_match($rule.into_inner())? => $stack)
+    (parens : $rule:expr => $tree:expr) => {
+        parse_token!(push: $tree.2.parse_match($rule.into_inner())? => $tree)
     };
-    (fn : $rule:expr => $stack:expr) => {
+    (fn : $rule:expr => $tree:expr) => {
         parse_token!(push: {
-            let mut stack: Stack = (vec![], None, $stack.2);
+            let mut tree: Tree = (vec![], None, $tree.2);
             let mut name = String::new();
             for pair in $rule.into_inner() {
                 match pair.as_rule() {
                     Rule::ident => name = parse_token!(ident: pair),
-                    Rule::parens_block => parse_token!(parens: pair => stack),
+                    Rule::parens_block => parse_token!(parens: pair => tree),
                     _ => parse_token!(!pair),
                 }
             }
             Node::Method(Box::new((
-                stack.2.functions
+                tree.2.functions
                     .get(&name)
                     .ok_or_else(|| TemplarError::FunctionNotFound(name.into()))?
                     .clone(),
-                stack.0.into(),
+                tree.0.into(),
             )))
-        } => $stack);
+        } => $tree);
     };
-    (filter : $rule:expr => $stack:expr) => {{
-        let mut stack: Stack = (vec![], None, $stack.2);
+    (filter : $rule:expr => $tree:expr) => {{
+        let mut tree: Tree = (vec![], None, $tree.2);
         let mut name = String::new();
         for pair in $rule.into_inner() {
             match pair.as_rule() {
                 Rule::ident => name = parse_token!(ident: pair),
-                Rule::parens_block => parse_token!(parens: pair => stack),
+                Rule::parens_block => parse_token!(parens: pair => tree),
                 _ => parse_token!(!pair),
             }
         }
-        $stack.0 = vec![Node::Filter(Box::new((
-            $stack.0.into(),
-            $stack.2.filters
+        $tree.0 = vec![Node::Filter(Box::new((
+            $tree.0.into(),
+            $tree.2.filters
                 .get(&name)
                 .ok_or_else(|| TemplarError::FilterNotFound(name.into()))?
                 .clone(),
-            stack.0.into(),
+            tree.0.into(),
         )))]
     }};
-    (value : $rule:expr) => {{
-        let mut result = vec![];
-        for pair in $rule.into_inner() {
-            match pair.as_rule() {
-                Rule::ident => result.push(parse_token!(ident: pair)),
-                Rule::value_key => result.push(parse_token!(value_key: pair)),
-                _ => parse_token!(!pair),
+    (value : $rule:expr => $tree:expr) => {
+        parse_token!(push: {
+            let mut result = vec![];
+            for pair in $rule.into_inner() {
+                match pair.as_rule() {
+                    Rule::ident => result.push(parse_token!(ident: pair)),
+                    Rule::value_key => result.push(parse_token!(value_key: pair)),
+                    _ => parse_token!(!pair),
+                }
             }
-        }
-        Node::Value(result)
-    }};
+            Node::Value(result)
+        } => $tree)
+    };
     (ident : $rule:expr) => {
         $rule.as_str().into()
     };
@@ -99,19 +101,19 @@ macro_rules! parse_token {
             .as_str()
             .replace("\\'", "'")
     };
-    (push : $current:expr => $stack:expr) => {{
-        if let Some(op) = $stack.1 {
-            $stack.0 = vec![Node::Filter(Box::new((
-                $stack.0.into(),
-                $stack.2.filters
+    (push : $current:expr => $tree:expr) => {{
+        if let Some(op) = $tree.1 {
+            $tree.0 = vec![Node::Filter(Box::new((
+                $tree.0.into(),
+                $tree.2.filters
                     .get(op)
                     .ok_or_else(|| TemplarError::FilterNotFound(op.to_string()))?
                     .clone(),
                 $current,
             )))];
-            $stack.1 = None;
+            $tree.1 = None;
         } else {
-            $stack.0.push($current);
+            $tree.0.push($current);
         }
     }};
     (! $rule:expr) => {{
@@ -144,36 +146,36 @@ impl Templar {
     }
 
     fn parse_match(&self, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Node> {
-        let mut stack: Stack = (vec![], None, self);
+        let mut tree: Tree = (vec![], None, self);
         for pair in pairs {
             match pair.as_rule() {
-                Rule::template_block => stack.0.push(self.parse_match(pair.into_inner())?),
-                Rule::raw_block => parse_token!(raw: pair => stack),
-                Rule::number_lit => parse_token!(number: pair => stack),
-                Rule::true_lit => parse_token!(true => stack),
-                Rule::false_lit => parse_token!(false => stack),
-                Rule::str_lit => parse_token!(str' ': pair => stack),
-                Rule::null_lit => parse_token!(nil => stack),
-                Rule::value => stack.0.push(parse_token!(value: pair)),
-                Rule::filter => parse_token!(filter: pair => stack),
-                Rule::function => parse_token!(fn: pair => stack),
-                Rule::op_add => stack.1 = Some("add"),
-                Rule::op_sub => stack.1 = Some("subtract"),
-                Rule::op_div => stack.1 = Some("divide"),
-                Rule::op_mlt => stack.1 = Some("multiply"),
-                Rule::op_mod => stack.1 = Some("mod"),
-                Rule::op_and => stack.1 = Some("and"),
-                Rule::op_or => stack.1 = Some("or"),
-                Rule::op_eq => stack.1 = Some("equals"),
-                Rule::op_ne => stack.1 = Some("not_equals"),
-                Rule::op_gt => stack.1 = Some("greater_than"),
-                Rule::op_gte => stack.1 = Some("greater_than_equals"),
-                Rule::op_lt => stack.1 = Some("less_than"),
-                Rule::op_lte => stack.1 = Some("less_than_equals"),
+                Rule::template_block => tree.0.push(self.parse_match(pair.into_inner())?),
+                Rule::raw_block => parse_token!(raw: pair => tree),
+                Rule::number_lit => parse_token!(number: pair => tree),
+                Rule::true_lit => parse_token!(true => tree),
+                Rule::false_lit => parse_token!(false => tree),
+                Rule::str_lit => parse_token!(str' ': pair => tree),
+                Rule::null_lit => parse_token!(nil => tree),
+                Rule::value => parse_token!(value: pair => tree),
+                Rule::filter => parse_token!(filter: pair => tree),
+                Rule::function => parse_token!(fn: pair => tree),
+                Rule::op_add => tree.1 = Some("add"),
+                Rule::op_sub => tree.1 = Some("subtract"),
+                Rule::op_div => tree.1 = Some("divide"),
+                Rule::op_mlt => tree.1 = Some("multiply"),
+                Rule::op_mod => tree.1 = Some("mod"),
+                Rule::op_and => tree.1 = Some("and"),
+                Rule::op_or => tree.1 = Some("or"),
+                Rule::op_eq => tree.1 = Some("equals"),
+                Rule::op_ne => tree.1 = Some("not_equals"),
+                Rule::op_gt => tree.1 = Some("greater_than"),
+                Rule::op_gte => tree.1 = Some("greater_than_equals"),
+                Rule::op_lt => tree.1 = Some("less_than"),
+                Rule::op_lte => tree.1 = Some("less_than_equals"),
                 Rule::EOI => break,
                 _ => parse_token!(!pair),
             }
         }
-        Ok(stack.0.into())
+        Ok(tree.0.into())
     }
 }
