@@ -6,187 +6,174 @@ use pest_derive::*;
 #[grammar = "templar.pest"]
 struct TemplarParser;
 
-macro_rules! parse_tokens {
-    (@inner $zelf:ident : $value:expr => $result:ident, ( expression $( $rest:tt )* ) -> ( $( $matches:tt )* )) => {
-        parse_tokens!(@inner $zelf : $value => $result, ( $( $rest )* ) -> (
-            Rule::number_lit => $result.push(Node::Data(
-                $value.as_str()
-                    .parse::<i64>()
-                    .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?
-                    .into(),
-            )),
-            Rule::true_lit => $result.push(Node::Data(true.into())),
-            Rule::false_lit => $result.push(Node::Data(false.into())),
-            Rule::str_lit => $result.push(Node::Data(
-                $value.into_inner().as_str().replace("\\'", "'").into(),
-            )),
-            Rule::null_lit => $result.push(Node::Data(Document::Unit)),
-            Rule::value => $result.push($zelf.parse_value($value.into_inner())?),
-            Rule::filter => $result = vec![$zelf.parse_filter($result.into(), $value.into_inner())?],
-            Rule::op_right => $result = vec![$zelf.parse_op($result.into(), $value.into_inner())?],
-            Rule::function => $result.push($zelf.parse_function($value.into_inner())?),
-            $( $matches )*
-        ))
+type Stack<'a> = (Vec<Node>, Option<&'a str>, &'a Templar);
+
+macro_rules! parse_token {
+    (number : $rule:expr => $stack:expr) => {
+        parse_token!(push: Node::Data(
+            $rule
+                .as_str()
+                .parse::<i64>()
+                .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?
+                .into(),
+        ) => $stack)
+    };
+    (true => $stack:expr) => {
+        parse_token!(push: Node::Data(true.into()) => $stack)
+    };
+    (false => $stack:expr) => {
+        parse_token!(push: Node::Data(false.into()) => $stack)
+    };
+    (str ' ' : $rule:expr => $stack:expr) => {
+        parse_token!(push: Node::Data($rule.into_inner().as_str().replace("\\'", "'").into()) => $stack)
+    };
+    (nil => $stack:expr) => {
+        parse_token!(push: Node::Data(Document::Unit) => $stack)
     };
 
-    (@inner $zelf:ident : $value:expr => $result:ident, ( (op: $op_name:ident) $( $rest:tt )* ) -> ( $( $matches:tt )* )) => {
-        parse_tokens!(@inner $zelf : $value => $result, ( $( $rest )* ) -> (
-            Rule::op_add => $op_name = "add",
-            Rule::op_sub => $op_name = "subtract",
-            Rule::op_div => $op_name = "divide",
-            Rule::op_mlt => $op_name = "multiply",
-            Rule::op_mod => $op_name = "mod",
-            $( $matches )*
-        ))
+    (raw : $rule:expr => $stack:expr) => {
+        parse_token!(push: Node::Data($rule.as_str().into()) => $stack)
     };
-
-    // End
-    (@inner $zelf:ident : $value:expr => $result:ident, () -> ($($tree:tt)*) ) => {
-        {
-            match $value.as_rule() {
-                $( $tree )*
-                _ => return Err(TemplarError::ParseFailure(
-                        format!("Unexpected rule: {}", $value)
-                    ))
+    (parens : $rule:expr => $stack:expr) => {
+        parse_token!(push: $stack.2.parse_match($rule.into_inner())? => $stack)
+    };
+    (fn : $rule:expr => $stack:expr) => {
+        parse_token!(push: {
+            let mut stack: Stack = (vec![], None, $stack.2);
+            let mut name = String::new();
+            for pair in $rule.into_inner() {
+                match pair.as_rule() {
+                    Rule::ident => name = parse_token!(ident: pair),
+                    Rule::parens_block => parse_token!(parens: pair => stack),
+                    _ => parse_token!(!pair),
+                }
+            }
+            Node::Method(Box::new((
+                stack.2.functions
+                    .get(&name)
+                    .ok_or_else(|| TemplarError::FunctionNotFound(name.into()))?
+                    .clone(),
+                stack.0.into(),
+            )))
+        } => $stack);
+    };
+    (filter : $rule:expr => $stack:expr) => {{
+        let mut stack: Stack = (vec![], None, $stack.2);
+        let mut name = String::new();
+        for pair in $rule.into_inner() {
+            match pair.as_rule() {
+                Rule::ident => name = parse_token!(ident: pair),
+                Rule::parens_block => parse_token!(parens: pair => stack),
+                _ => parse_token!(!pair),
             }
         }
+        $stack.0 = vec![Node::Filter(Box::new((
+            $stack.0.into(),
+            $stack.2.filters
+                .get(&name)
+                .ok_or_else(|| TemplarError::FilterNotFound(name.into()))?
+                .clone(),
+            stack.0.into(),
+        )))]
+    }};
+    (value : $rule:expr) => {{
+        let mut result = vec![];
+        for pair in $rule.into_inner() {
+            match pair.as_rule() {
+                Rule::ident => result.push(parse_token!(ident: pair)),
+                Rule::value_key => result.push(parse_token!(value_key: pair)),
+                _ => parse_token!(!pair),
+            }
+        }
+        Node::Value(result)
+    }};
+    (ident : $rule:expr) => {
+        $rule.as_str().into()
     };
-    // Entry
-    ( $zelf:ident : $value:expr => $result:ident, $($rest:tt)* ) => {
-        parse_tokens!(@inner $zelf : $value => $result, ($($rest)*) -> ())
+    (value_key : $rule:expr) => {
+        $rule
+            .into_inner()
+            .next()
+            .unwrap()
+            .into_inner()
+            .as_str()
+            .replace("\\'", "'")
     };
+    (push : $current:expr => $stack:expr) => {{
+        if let Some(op) = $stack.1 {
+            $stack.0 = vec![Node::Filter(Box::new((
+                $stack.0.into(),
+                $stack.2.filters
+                    .get(op)
+                    .ok_or_else(|| TemplarError::FilterNotFound(op.to_string()))?
+                    .clone(),
+                $current,
+            )))];
+            $stack.1 = None;
+        } else {
+            $stack.0.push($current);
+        }
+    }};
+    (! $rule:expr) => {{
+        return Err(TemplarError::ParseFailure(format!(
+            "Unexpected rule while parsing expression: {}",
+            $rule
+        )));
+    }};
 }
 
 impl Templar {
-    pub(crate) fn parse_text(&self, input: &str, template: bool) -> Result<Template> {
-        Ok(if template {
-            let tokens = TemplarParser::parse(Rule::template, input)
-                .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?;
-            self.parse_raw(tokens)?.into()
-        } else {
-            let tokens = TemplarParser::parse(Rule::expression, input.trim())
-                .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?;
-            self.parse_expr(tokens)?
-        }
-        .into())
+    #[inline]
+    pub fn parse_template(&self, input: &str) -> Result<Template> {
+        Ok(self
+            .parse_match(
+                TemplarParser::parse(Rule::template, input)
+                    .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?,
+            )?
+            .into())
     }
 
-    fn parse_raw(&self, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Vec<Node>> {
-        let mut result = vec![];
+    #[inline]
+    pub fn parse_expression(&self, input: &str) -> Result<Template> {
+        Ok(self
+            .parse_match(
+                TemplarParser::parse(Rule::expression, input.trim())
+                    .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?,
+            )?
+            .into())
+    }
+
+    fn parse_match(&self, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Node> {
+        let mut stack: Stack = (vec![], None, self);
         for pair in pairs {
             match pair.as_rule() {
-                Rule::raw_block => result.push(Node::Data(pair.as_str().into())),
-                Rule::template_block => result.push(self.parse_expr(pair.into_inner())?),
-                Rule::EOI => return Ok(result),
-                _ => {
-                    return Err(TemplarError::ParseFailure(format!(
-                        "Unexpected rule: {}",
-                        pair
-                    )))
-                }
+                Rule::template_block => stack.0.push(self.parse_match(pair.into_inner())?),
+                Rule::raw_block => parse_token!(raw: pair => stack),
+                Rule::number_lit => parse_token!(number: pair => stack),
+                Rule::true_lit => parse_token!(true => stack),
+                Rule::false_lit => parse_token!(false => stack),
+                Rule::str_lit => parse_token!(str' ': pair => stack),
+                Rule::null_lit => parse_token!(nil => stack),
+                Rule::value => stack.0.push(parse_token!(value: pair)),
+                Rule::filter => parse_token!(filter: pair => stack),
+                Rule::function => parse_token!(fn: pair => stack),
+                Rule::op_add => stack.1 = Some("add"),
+                Rule::op_sub => stack.1 = Some("subtract"),
+                Rule::op_div => stack.1 = Some("divide"),
+                Rule::op_mlt => stack.1 = Some("multiply"),
+                Rule::op_mod => stack.1 = Some("mod"),
+                Rule::op_and => stack.1 = Some("and"),
+                Rule::op_or => stack.1 = Some("or"),
+                Rule::op_eq => stack.1 = Some("equals"),
+                Rule::op_ne => stack.1 = Some("not_equals"),
+                Rule::op_gt => stack.1 = Some("greater_than"),
+                Rule::op_gte => stack.1 = Some("greater_than_equals"),
+                Rule::op_lt => stack.1 = Some("less_than"),
+                Rule::op_lte => stack.1 = Some("less_than_equals"),
+                Rule::EOI => break,
+                _ => parse_token!(!pair),
             }
         }
-        Ok(result)
-    }
-
-    fn parse_expr(&self, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Node> {
-        let mut result = vec![];
-        for pair in pairs {
-            parse_tokens!(self: pair => result, expression);
-        }
-        Ok(result.into())
-    }
-
-    fn parse_op(&self, left: Node, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Node> {
-        let mut right = vec![];
-        let mut op_name = "";
-        for pair in pairs {
-            parse_tokens!(self: pair => right, expression (op: op_name));
-        }
-        Ok(Node::Filter(Box::new((
-            left,
-            self.filters
-                .get(op_name)
-                .ok_or_else(|| TemplarError::FilterNotFound(op_name.into()))?
-                .clone(),
-            right.into(),
-        ))))
-    }
-
-    fn parse_function(&self, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Node> {
-        let mut name = String::new();
-        let mut args = Node::Empty();
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::ident => name = pair.as_str().into(),
-                Rule::parens_block => args = self.parse_expr(pair.into_inner())?,
-                _ => {
-                    return Err(TemplarError::ParseFailure(format!(
-                        "Unexpected rule: {}",
-                        pair
-                    )))
-                }
-            }
-        }
-        Ok(Node::Method(Box::new((
-            self.functions
-                .get(&name)
-                .ok_or_else(|| TemplarError::FunctionNotFound(name))?
-                .clone(),
-            args,
-        ))))
-    }
-
-    fn parse_filter(&self, left: Node, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Node> {
-        let mut name = String::new();
-        let mut args = Node::Empty();
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::ident => name = pair.as_str().into(),
-                Rule::parens_block => args = self.parse_expr(pair.into_inner())?,
-                _ => {
-                    return Err(TemplarError::ParseFailure(format!(
-                        "Unexpected rule: {}",
-                        pair
-                    )))
-                }
-            }
-        }
-        Ok(Node::Filter(Box::new((
-            left,
-            self.filters
-                .get(&name)
-                .ok_or_else(|| TemplarError::FilterNotFound(name))?
-                .clone(),
-            args,
-        ))))
-    }
-
-    fn parse_value(&self, pairs: pest::iterators::Pairs<'_, Rule>) -> Result<Node> {
-        let mut result = vec![];
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::ident => result.push(
-                    pair.as_str()
-                        .parse::<String>()
-                        .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?,
-                ),
-                Rule::value_key => result.push(
-                    pair.into_inner()
-                        .next()
-                        .unwrap()
-                        .into_inner()
-                        .as_str()
-                        .replace("\\'", "'"),
-                ),
-                _ => {
-                    return Err(TemplarError::ParseFailure(format!(
-                        "Unexpected rule: {}",
-                        pair
-                    )))
-                }
-            }
-        }
-        Ok(Node::Value(result))
+        Ok(stack.0.into())
     }
 }

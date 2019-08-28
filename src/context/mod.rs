@@ -27,6 +27,7 @@ impl Context for SharedContext {
     fn merge(&self, doc: Document) {
         self.0.write().merge(doc);
     }
+
     fn set(&self, doc: Document) {
         self.0.write().set(doc);
     }

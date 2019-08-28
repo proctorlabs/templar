@@ -44,12 +44,20 @@ builtin_functions! {
 }
 
 builtin_filters! {
-    //ops
+    //operations, these ops can also be used like filters
     "add":add,
     "subtract":subtract,
     "divide":divide,
     "multiply":multiply,
     "mod":modulus,
+    "and":and,
+    "or":or,
+    "equals":equals,
+    "not_equals":not_equals,
+    "greater_than":greater_than,
+    "greater_than_equals":greater_than_equals,
+    "less_than":less_than,
+    "less_than_equals":less_than_equals,
 
     //common
     "length":length,

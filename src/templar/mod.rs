@@ -54,16 +54,6 @@ impl Templar {
     }
 
     #[inline]
-    pub fn parse_template(&self, val: &str) -> Result<Template> {
-        self.parse_text(val, true)
-    }
-
-    #[inline]
-    pub fn parse_expression(&self, val: &str) -> Result<Template> {
-        self.parse_text(val, false)
-    }
-
-    #[inline]
     pub fn parse_json(&self, json: &str) -> Result<TemplateTree> {
         Ok(self.parse_tree(&serde_json::from_str(json)?)?)
     }

@@ -19,7 +19,7 @@ fn parse_yml_template() -> Result<()> {
 
 #[test]
 fn parse_expression_direct() -> Result<()> {
-    let tmpl = Templar::global().parse_expression(" one['two'].three | upper ")?;
+    let tmpl = Templar::global().parse_expression(" 1 + 2 ")?;
     let context = StandardContext::new({
         let mut doc = Document::default();
         doc["one"]["two"]["three"] = "val".into();

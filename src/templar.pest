@@ -1,16 +1,22 @@
 WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+COMMENT = _{ "{#" ~ (!"#}" ~ ANY)* ~ "#}" }
 
 //A whole template
 template = _{ SOI ~ (raw_block | template_block)* ~ EOI }
 
 //Template expressions
-expression     = _{ (all_lits | function | value) ~ operation* }
-cap_expression = { expression }
+expression     = _{ (literal | function | value) ~ operation* }
 
 //Blocks, containing templates or other chunks of data
 raw_block      = @{ (!"{{" ~ ANY)+ }
 template_block = { "{{" ~ (!"}}" ~ expression) ~ "}}" }
 parens_block   = { "(" ~ (expression ~ ("," ~ expression)*)? ~ ")" }
+
+//Operations
+operation = _{ ( op_right | filter ) }
+filter    = { "|" ~ ident ~ parens_block? }
+function  = { ident ~ parens_block }
+op_right  = _{ op ~ expression }
 
 //Identifiers
 ident     = ${ ASCII_ALPHA ~ ASCII_ALPHANUMERIC*? }
@@ -18,43 +24,28 @@ value_key = ${ "[" ~ str_lit ~ "]"}
 value_id  = _{ ( "." ~ ident) | value_key }
 value     = @{ ident ~ (value_id)* }
 
-//Actions
-operation = _{ ( filter | op_right ) }
-filter    = { "|" ~ ident ~ parens_block? }
-function  = { ident ~ parens_block }
-op_right  = { op ~ (all_lits | function | value) }
-
 //Literals
-all_lits   = _{ (bool_lit | number_lit | str_lit | null_lit) ~ !ASCII_ALPHANUMERIC }
+literal    = _{ (bool_lit | number_lit | str_lit | null_lit) ~ !ASCII_ALPHANUMERIC }
 bool_lit   = _{ true_lit | false_lit }
 true_lit   = { "true" | "yes" }
 false_lit  = { "false" | "no" }
 null_lit   = { "null" | "nil" }
 number_lit = @{ "-"? ~ ASCII_DIGIT+ }
-
-//String literals
 str_lit   = ${ "'" ~ str_lit_c ~ "'" }
 str_lit_c = @{ (!"'" ~ ("\\'" | ANY))* }
 
-//Operators
-op  = _{ op_add | op_sub | op_div | op_mlt | op_mod }
-cmp = _{ op_and | op_or | op_not | op_eq | op_ne | op_gt | op_gte | op_lt | op_lte }
-
-//Math
-op_add = { "+" }
-op_sub = { "-" }
-op_div = { "/" }
-op_mlt = { "*" }
-op_mod = { "%" }
-
-//Logic
-op_trn = { "?" }
+// All comparitive operators
+op  = _{ op_add | op_sub | op_div | op_mlt | op_mod | op_and | op_or | op_eq | op_ne | op_gt | op_gte | op_lt | op_lte }
 op_and = { "&&" }
 op_or  = { "||" }
-op_not = { "!"  }
 op_eq  = { "==" }
 op_ne  = { "!=" }
 op_gt  = { ">"  }
 op_gte = { ">=" }
 op_lt  = { "<"  }
 op_lte = { "<=" }
+op_add = { "+" }
+op_sub = { "-" }
+op_div = { "/" }
+op_mlt = { "*" }
+op_mod = { "%" }
