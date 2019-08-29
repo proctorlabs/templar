@@ -61,3 +61,7 @@ pub fn less_than(left: TemplarResult, right: TemplarResult) -> TemplarResult {
 pub fn less_than_equals(left: TemplarResult, right: TemplarResult) -> TemplarResult {
     Ok((left? <= right?).into())
 }
+
+pub fn concat(left: TemplarResult, right: TemplarResult) -> TemplarResult {
+    Ok(format!("{}{}", left?, right?).into())
+}

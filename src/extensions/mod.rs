@@ -40,7 +40,8 @@ builtin_functions! {
     "yml":yaml,
     "file":file,
     "env":env,
-    "shell":shell
+    "script":script,
+    "command":command
 }
 
 builtin_filters! {
@@ -58,6 +59,7 @@ builtin_filters! {
     "greater_than_equals":greater_than_equals,
     "less_than":less_than,
     "less_than_equals":less_than_equals,
+    "concat":concat,
 
     //common
     "length":length,

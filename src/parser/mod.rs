@@ -1,6 +1,7 @@
 use crate::*;
 use pest::Parser;
 use pest_derive::*;
+use std::collections::BTreeMap;
 
 #[derive(Parser)]
 #[grammar = "templar.pest"]
@@ -9,14 +10,14 @@ struct TemplarParser;
 type Tree<'a> = (Vec<Node>, Option<&'a str>, &'a Templar);
 
 macro_rules! parse_token {
-    (number : $rule:expr => $tree:expr) => {
-        parse_token!(push: Node::Data(
-            $rule
-                .as_str()
-                .parse::<i64>()
-                .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?
-                .into(),
-        ) => $tree)
+    (expression : $rule:expr => $tree:expr) => {
+        parse_token!(push: $tree.2.parse_match($rule.into_inner())? => $tree)
+    };
+    (raw : $rule:expr => $tree:expr) => {
+        $tree.0.push(Node::Data($rule.as_str().into()))
+    };
+    (template : $rule:expr => $tree:expr) => {
+        $tree.0.push($tree.2.parse_match($rule.into_inner())?)
     };
     (true => $tree:expr) => {
         parse_token!(push: Node::Data(true.into()) => $tree)
@@ -30,12 +31,52 @@ macro_rules! parse_token {
     (nil => $tree:expr) => {
         parse_token!(push: Node::Data(Document::Unit) => $tree)
     };
-
-    (raw : $rule:expr => $tree:expr) => {
-        parse_token!(push: Node::Data($rule.as_str().into()) => $tree)
-    };
-    (parens : $rule:expr => $tree:expr) => {
+    (args : $rule:expr => $tree:expr) => {
         parse_token!(push: $tree.2.parse_match($rule.into_inner())? => $tree)
+    };
+    (op : $name:literal => $tree:expr) => {
+        $tree.1 = Some($name)
+    };
+    (ident : $rule:expr) => {
+        $rule.as_str().into()
+    };
+    (number : $rule:expr => $tree:expr) => {
+        parse_token!(push: Node::Data(
+            $rule
+                .as_str()
+                .parse::<i64>()
+                .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?
+                .into(),
+        ) => $tree)
+    };
+    (array : $rule:expr => $tree:expr) => {
+        parse_token!(push: {
+            let mut tree: Tree = (vec![], None, $tree.2);
+            for pair in $rule.into_inner() {
+                match pair.as_rule() {
+                    Rule::expression_cap => tree.0.push(tree.2.parse_match(pair.into_inner())?),
+                    _ => parse_token!(!pair),
+                }
+            }
+            Node::Array(tree.0.into())
+        } => $tree)
+    };
+    (map : $rule:expr => $tree:expr) => {
+        parse_token!(push: {
+            let mut res = BTreeMap::new();
+            let mut last_lit = Document::Unit;
+            for pair in $rule.into_inner() {
+                match pair.as_rule() {
+                    Rule::literal_cap => last_lit = $tree.2.parse_match(pair.into_inner())?.into_document()?,
+                    Rule::expression_cap => {
+                        res.insert(last_lit, $tree.2.parse_match(pair.into_inner())?);
+                        last_lit = Document::Unit;
+                    },
+                    _ => parse_token!(!pair),
+                }
+            }
+            Node::Map(res)
+        } => $tree)
     };
     (fn : $rule:expr => $tree:expr) => {
         parse_token!(push: {
@@ -44,7 +85,7 @@ macro_rules! parse_token {
             for pair in $rule.into_inner() {
                 match pair.as_rule() {
                     Rule::ident => name = parse_token!(ident: pair),
-                    Rule::parens_block => parse_token!(parens: pair => tree),
+                    Rule::args => parse_token!(args: pair => tree),
                     _ => parse_token!(!pair),
                 }
             }
@@ -63,7 +104,7 @@ macro_rules! parse_token {
         for pair in $rule.into_inner() {
             match pair.as_rule() {
                 Rule::ident => name = parse_token!(ident: pair),
-                Rule::parens_block => parse_token!(parens: pair => tree),
+                Rule::args => parse_token!(args: pair => tree),
                 _ => parse_token!(!pair),
             }
         }
@@ -88,9 +129,6 @@ macro_rules! parse_token {
             }
             Node::Value(result)
         } => $tree)
-    };
-    (ident : $rule:expr) => {
-        $rule.as_str().into()
     };
     (value_key : $rule:expr) => {
         $rule
@@ -149,29 +187,33 @@ impl Templar {
         let mut tree: Tree = (vec![], None, self);
         for pair in pairs {
             match pair.as_rule() {
-                Rule::template_block => tree.0.push(self.parse_match(pair.into_inner())?),
+                Rule::expression_cap => parse_token!(expression: pair => tree),
+                Rule::template_block => parse_token!(template: pair => tree),
                 Rule::raw_block => parse_token!(raw: pair => tree),
                 Rule::number_lit => parse_token!(number: pair => tree),
                 Rule::true_lit => parse_token!(true => tree),
                 Rule::false_lit => parse_token!(false => tree),
-                Rule::str_lit => parse_token!(str' ': pair => tree),
+                Rule::string_lit => parse_token!(str ' ': pair => tree),
                 Rule::null_lit => parse_token!(nil => tree),
                 Rule::value => parse_token!(value: pair => tree),
                 Rule::filter => parse_token!(filter: pair => tree),
                 Rule::function => parse_token!(fn: pair => tree),
-                Rule::op_add => tree.1 = Some("add"),
-                Rule::op_sub => tree.1 = Some("subtract"),
-                Rule::op_div => tree.1 = Some("divide"),
-                Rule::op_mlt => tree.1 = Some("multiply"),
-                Rule::op_mod => tree.1 = Some("mod"),
-                Rule::op_and => tree.1 = Some("and"),
-                Rule::op_or => tree.1 = Some("or"),
-                Rule::op_eq => tree.1 = Some("equals"),
-                Rule::op_ne => tree.1 = Some("not_equals"),
-                Rule::op_gt => tree.1 = Some("greater_than"),
-                Rule::op_gte => tree.1 = Some("greater_than_equals"),
-                Rule::op_lt => tree.1 = Some("less_than"),
-                Rule::op_lte => tree.1 = Some("less_than_equals"),
+                Rule::array_lit => parse_token!(array: pair => tree),
+                Rule::map_lit => parse_token!(map: pair => tree),
+                Rule::op_add => parse_token!(op: "add" => tree),
+                Rule::op_sub => parse_token!(op: "subtract" => tree),
+                Rule::op_div => parse_token!(op: "divide" => tree),
+                Rule::op_mlt => parse_token!(op: "multiply" => tree),
+                Rule::op_mod => parse_token!(op: "mod" => tree),
+                Rule::op_and => parse_token!(op: "and" => tree),
+                Rule::op_or => parse_token!(op: "or" => tree),
+                Rule::op_eq => parse_token!(op: "equals" => tree),
+                Rule::op_ne => parse_token!(op: "not_equals" => tree),
+                Rule::op_gt => parse_token!(op: "greater_than" => tree),
+                Rule::op_gte => parse_token!(op: "greater_than_equals" => tree),
+                Rule::op_lt => parse_token!(op: "less_than" => tree),
+                Rule::op_lte => parse_token!(op: "less_than_equals" => tree),
+                Rule::op_cat => parse_token!(op: "concat" => tree),
                 Rule::EOI => break,
                 _ => parse_token!(!pair),
             }

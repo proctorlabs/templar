@@ -27,10 +27,30 @@ pub fn env(args: TemplarResult) -> TemplarResult {
     Ok(std::env::var(env_name).unwrap_or_default().into())
 }
 
-pub fn shell(args: TemplarResult) -> TemplarResult {
-    let result = Command::new("/usr/bin/env")
-        .args(vec!["sh", "-c", &args?.to_string()])
-        .output()?;
+pub fn script(args: TemplarResult) -> TemplarResult {
+    let mut sh_args = vec![Document::String("sh".into()), "-c".into()];
+    match args? {
+        Document::Seq(s) => {
+            for arg in s.iter() {
+                sh_args.push(arg.clone())
+            }
+        }
+        other => sh_args.push(other),
+    }
+    command(Ok(sh_args.into()))
+}
+
+pub fn command(args: TemplarResult) -> TemplarResult {
+    let mut sh_args = vec![];
+    match args? {
+        Document::Seq(s) => {
+            for arg in s.iter() {
+                sh_args.push(arg.to_string())
+            }
+        }
+        other => sh_args.push(other.to_string()),
+    }
+    let result = Command::new("/usr/bin/env").args(sh_args).output()?;
     let mut map = BTreeMap::<Document, Document>::new();
     map.insert(
         "stdout".into(),

@@ -14,6 +14,18 @@ impl Default for TemplarBuilder {
     }
 }
 
+// pub type GenericFunction<'de, T: serde::Deserialize<'de>> = fn(T) -> TemplarResult;
+
+// fn make_fn<'de, T: serde::Deserialize<'de>>(inner: GenericFunction<T>) -> Function {
+//     let d_fn = move |a: TemplarResult| {
+//         let sub_args: T = a?.try_into().map_err(|e| {
+//             TemplarError::RenderFailure(format!("Args could not be converted: {}", e))
+//         })?;
+//         Ok(inner(sub_args))
+//     };
+//     d_fn
+// }
+
 impl TemplarBuilder {
     pub fn new() -> TemplarBuilder {
         TemplarBuilder {

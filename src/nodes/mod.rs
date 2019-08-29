@@ -1,4 +1,5 @@
 use crate::*;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use unstructured::Document;
 
@@ -9,6 +10,8 @@ pub enum Node {
     Value(Vec<String>),
     Filter(Box<(Node, Arc<Filter>, Node)>),
     Method(Box<(Arc<Function>, Node)>),
+    Array(Vec<Node>),
+    Map(BTreeMap<Document, Node>),
     Empty(),
     Error(String),
 }
@@ -47,6 +50,26 @@ impl Node {
                 let p = piped.exec(ctx).into_document();
                 let a = args.exec(ctx).into_document();
                 filter(p, a).into()
+            }
+            Self::Array(s) => {
+                let mut elements = vec![];
+                for node in s.iter() {
+                    match node.exec(ctx) {
+                        Self::Data(d) => elements.push(d),
+                        error => return error,
+                    };
+                }
+                Self::Data(Document::Seq(elements))
+            }
+            Self::Map(m) => {
+                let mut map = BTreeMap::new();
+                for (key, node) in m.iter() {
+                    match node.exec(ctx) {
+                        Self::Data(d) => map.insert(key.clone(), d),
+                        error => return error,
+                    };
+                }
+                Self::Data(map.into())
             }
             Self::Method(m) => {
                 let (function, args) = (&m.0, &m.1);
