@@ -22,7 +22,7 @@ function  = { ident ~ args }
 oper  = _{ op ~ expression }
 
 // Identifiers
-ident     = ${ ASCII_ALPHA ~ ASCII_ALPHANUMERIC*? }
+ident     = ${ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")*? }
 value_key = ${ "[" ~ string_lit ~ "]"}
 value_id  = _{ ( "." ~ ident) | value_key }
 value     = @{ ident ~ (value_id)* }

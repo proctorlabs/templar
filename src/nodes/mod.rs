@@ -1,9 +1,9 @@
 use crate::*;
 use std::collections::BTreeMap;
+use std::fmt;
 use std::sync::Arc;
 use unstructured::Document;
 
-#[derive(Debug)]
 pub enum Node {
     Expr(Vec<Node>),
     Data(Document),
@@ -14,6 +14,22 @@ pub enum Node {
     Map(BTreeMap<Document, Node>),
     Empty(),
     Error(String),
+}
+
+impl fmt::Debug for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Node::Filter(_) => write!(f, "Node::Filter"),
+            Node::Method(_) => write!(f, "Node::Function"),
+            Node::Empty() => write!(f, "Node::Empty"),
+            Node::Expr(inner) => inner.fmt(f),
+            Node::Data(inner) => inner.fmt(f),
+            Node::Value(inner) => inner.fmt(f),
+            Node::Array(inner) => inner.fmt(f),
+            Node::Map(inner) => inner.fmt(f),
+            Node::Error(inner) => inner.fmt(f),
+        }
+    }
 }
 
 impl Default for Node {

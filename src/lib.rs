@@ -6,7 +6,7 @@ use std::{collections::HashMap, sync::Arc};
 pub use {
     self::{
         context::{Context, SharedContext, StandardContext},
-        extensions::{Filter, Function, TemplarResult},
+        extensions::{Filter, Function, GenericFilter, GenericFunction, TemplarResult},
         nodes::Node,
         templar::*,
         template::{Template, TemplateTree},

@@ -7,15 +7,19 @@ use std::collections::HashMap;
 use unstructured::Document;
 
 pub type TemplarResult = Result<Document>;
-pub type Filter = fn(TemplarResult, TemplarResult) -> TemplarResult;
-pub type Function = fn(TemplarResult) -> TemplarResult;
+
+pub type GenericFilter<'de, T, U, V> = fn(T, U) -> Result<V>;
+pub type Filter = dyn Fn(TemplarResult, TemplarResult) -> TemplarResult + Send + Sync;
+
+pub type GenericFunction<'de, T, U> = fn(T) -> Result<U>;
+pub type Function = dyn Fn(TemplarResult) -> TemplarResult + Send + Sync;
 
 macro_rules! builtin_filters {
     ($( $name:literal : $method:ident),*) => {
-        pub fn default_filters() -> HashMap<String, Filter> {
+        pub fn default_filters() -> HashMap<String, Arc<Filter>> {
             let mut res = HashMap::new();
             $(
-                res.insert($name.into(), builtin_filters::$method as Filter);
+                res.insert($name.into(), Arc::new(builtin_filters::$method) as Arc<Filter>);
             )*
             res
         }
@@ -24,10 +28,10 @@ macro_rules! builtin_filters {
 
 macro_rules! builtin_functions {
     ($( $name:literal : $method:ident),*) => {
-        pub fn default_functions() -> HashMap<String, Function> {
+        pub fn default_functions() -> HashMap<String, Arc<Function>> {
             let mut res = HashMap::new();
             $(
-                res.insert($name.into(), builtin_functions::$method as Function);
+                res.insert($name.into(), Arc::new(builtin_functions::$method) as Arc<Function>);
             )*
             res
         }

@@ -1,8 +1,8 @@
 use super::*;
 
 pub struct TemplarBuilder {
-    functions: HashMap<String, Function>,
-    filters: HashMap<String, Filter>,
+    functions: HashMap<String, Arc<Function>>,
+    filters: HashMap<String, Arc<Filter>>,
 }
 
 impl Default for TemplarBuilder {
@@ -14,18 +14,6 @@ impl Default for TemplarBuilder {
     }
 }
 
-// pub type GenericFunction<'de, T: serde::Deserialize<'de>> = fn(T) -> TemplarResult;
-
-// fn make_fn<'de, T: serde::Deserialize<'de>>(inner: GenericFunction<T>) -> Function {
-//     let d_fn = move |a: TemplarResult| {
-//         let sub_args: T = a?.try_into().map_err(|e| {
-//             TemplarError::RenderFailure(format!("Args could not be converted: {}", e))
-//         })?;
-//         Ok(inner(sub_args))
-//     };
-//     d_fn
-// }
-
 impl TemplarBuilder {
     pub fn new() -> TemplarBuilder {
         TemplarBuilder {
@@ -34,8 +22,37 @@ impl TemplarBuilder {
         }
     }
 
-    pub fn add_function(&mut self, name: &str, val: Function) -> &mut Self {
-        self.functions.insert(name.into(), val);
+    pub fn add_function<T: 'static + Fn(TemplarResult) -> TemplarResult + Send + Sync>(
+        &mut self,
+        name: &str,
+        val: T,
+    ) -> &mut Self {
+        self.functions.insert(name.into(), Arc::new(val));
+        self
+    }
+
+    pub fn add_generic_function<
+        'de,
+        T: 'static + serde::Deserialize<'de>,
+        U: 'static + serde::Serialize,
+    >(
+        &mut self,
+        name: &str,
+        inner: GenericFunction<T, U>,
+    ) -> &mut Self {
+        let generic_fn = move |a: TemplarResult| {
+            let sub_args: T = a?.try_into().map_err(|e| {
+                TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
+            })?;
+            let result = inner(sub_args)?;
+            Ok(Document::new(result).map_err(|e| {
+                TemplarError::RenderFailure(format!(
+                    "Could not serialize result into Document: {}",
+                    e
+                ))
+            })?)
+        };
+        self.functions.insert(name.into(), Arc::new(generic_fn));
         self
     }
 
@@ -44,8 +61,43 @@ impl TemplarBuilder {
         self
     }
 
-    pub fn add_filter(&mut self, name: &str, val: Filter) -> &mut Self {
-        self.filters.insert(name.into(), val);
+    pub fn add_filter<
+        T: 'static + Fn(TemplarResult, TemplarResult) -> TemplarResult + Send + Sync,
+    >(
+        &mut self,
+        name: &str,
+        val: T,
+    ) -> &mut Self {
+        self.filters.insert(name.into(), Arc::new(val));
+        self
+    }
+
+    pub fn add_generic_filter<
+        'de,
+        T: 'static + serde::Deserialize<'de>,
+        U: 'static + serde::Deserialize<'de>,
+        V: 'static + serde::Serialize,
+    >(
+        &mut self,
+        name: &str,
+        inner: GenericFilter<T, U, V>,
+    ) -> &mut Self {
+        let generic_filter = move |a: TemplarResult, b: TemplarResult| {
+            let arg1: T = a?.try_into().map_err(|e| {
+                TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
+            })?;
+            let arg2: U = b?.try_into().map_err(|e| {
+                TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
+            })?;
+            let result = inner(arg1, arg2)?;
+            Ok(Document::new(result).map_err(|e| {
+                TemplarError::RenderFailure(format!(
+                    "Could not serialize result into Document: {}",
+                    e
+                ))
+            })?)
+        };
+        self.filters.insert(name.into(), Arc::new(generic_filter));
         self
     }
 
@@ -55,18 +107,8 @@ impl TemplarBuilder {
     }
 
     pub fn build(self) -> Templar {
-        let functions = self
-            .functions
-            .into_iter()
-            .map(|(k, v)| (k, Arc::new(v)))
-            .collect();
-
-        let filters = self
-            .filters
-            .into_iter()
-            .map(|(k, v)| (k, Arc::new(v)))
-            .collect();
-
+        let functions = self.functions;
+        let filters = self.filters;
         Templar { functions, filters }
     }
 }
