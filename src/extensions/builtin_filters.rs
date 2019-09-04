@@ -100,3 +100,19 @@ pub fn key(value: TemplarResult, args: TemplarResult) -> TemplarResult {
         }
     })
 }
+
+pub fn default(value: TemplarResult, args: TemplarResult) -> TemplarResult {
+    match value {
+        Ok(Document::Unit) | Err(_) => args,
+        other => other,
+    }
+}
+
+pub fn require(value: TemplarResult, _: TemplarResult) -> TemplarResult {
+    match value {
+        Ok(Document::Unit) => Err(TemplarError::RenderFailure(
+            "Required value is missing.".into(),
+        )),
+        other => other,
+    }
+}

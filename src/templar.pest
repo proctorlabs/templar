@@ -1,19 +1,19 @@
 WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
 COMMENT = _{ "{#" ~ (!"#}" ~ ANY)* ~ "#}" }
 
-// A whole template
-template = _{ SOI ~ (raw_block | template_block)* ~ EOI }
+// A whole template, whitespace on either end will be trimmed
+template = ${ SOI ~ WHITESPACE* ~ (raw_block | template_block)+ ~ WHITESPACE* ~ EOI }
 
 // Template expressions
 expression        = _{ (inner | literal | function | value) ~ operation* }
-expression_cap    = { expression }
+expression_cap    = !{ expression }
 expression_vararg = _{ (expression_cap ~ ("," ~ expression_cap)*)? }
 inner             = _{ "(" ~ expression_cap ~ ")" }
 args              = { "(" ~ expression_vararg ~ ")" }
 
 // Blocks, containing templates or other chunks of data
 raw_block      = @{ (!"{{" ~ ANY)+ }
-template_block = { "{{" ~ (!"}}" ~ expression) ~ "}}" }
+template_block = !{ "{{" ~ (!"}}" ~ expression) ~ "}}" }
 
 // Operations
 operation = _{ ( oper | filter ) }

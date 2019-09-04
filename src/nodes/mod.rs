@@ -13,7 +13,7 @@ pub enum Node {
     Array(Vec<Node>),
     Map(BTreeMap<Document, Node>),
     Empty(),
-    Error(String),
+    Error(TemplarError),
 }
 
 impl fmt::Debug for Node {
@@ -39,6 +39,13 @@ impl Default for Node {
 }
 
 impl Node {
+    pub(crate) fn make_vector(self) -> Vec<Node> {
+        match self {
+            Self::Expr(inner) => inner,
+            _ => vec![self],
+        }
+    }
+
     pub(crate) fn exec(&self, ctx: &dyn Context) -> Node {
         match self {
             Self::Data(d) => Self::Data(d.clone()),
@@ -93,14 +100,14 @@ impl Node {
                 function(a).into()
             }
             Self::Empty() => Self::Data(Document::Unit),
-            Self::Error(e) => Self::Error(e.to_owned()),
+            Self::Error(e) => Self::Error(e.clone()),
         }
     }
 
     pub(crate) fn into_document(self) -> Result<Document> {
         match self {
             Self::Data(d) => Ok(d),
-            Self::Error(s) => Err(TemplarError::RenderFailure(s)),
+            Self::Error(e) => Err(e),
             _ => Err(TemplarError::RenderFailure(
                 "Attempted document conversion on unprocessed node".into(),
             )),
@@ -116,7 +123,7 @@ impl From<Result<Document>> for Node {
     fn from(doc: Result<Document>) -> Node {
         match doc {
             Ok(d) => Self::Data(d),
-            Err(e) => Self::Error(format!("{:?}", e)),
+            Err(e) => Self::Error(e),
         }
     }
 }

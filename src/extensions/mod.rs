@@ -66,6 +66,8 @@ builtin_filters! {
     "concat":concat,
 
     //common
+    "require":require,
+    "default":default,
     "length":length,
     "lower":lower,
     "upper":upper,

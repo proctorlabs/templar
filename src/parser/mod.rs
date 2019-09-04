@@ -19,6 +19,9 @@ macro_rules! parse_token {
     (template : $rule:expr => $tree:expr) => {
         $tree.0.push($tree.2.parse_match($rule.into_inner())?)
     };
+    (replace : $rule:expr => $tree:expr) => {
+        $tree.0 = $tree.2.parse_match($rule.into_inner())?.make_vector()
+    };
     (true => $tree:expr) => {
         parse_token!(push: Node::Data(true.into()) => $tree)
     };
@@ -188,6 +191,7 @@ impl Templar {
         for pair in pairs {
             match pair.as_rule() {
                 Rule::expression_cap => parse_token!(expression: pair => tree),
+                Rule::template => parse_token!(replace: pair => tree),
                 Rule::template_block => parse_token!(template: pair => tree),
                 Rule::raw_block => parse_token!(raw: pair => tree),
                 Rule::number_lit => parse_token!(number: pair => tree),

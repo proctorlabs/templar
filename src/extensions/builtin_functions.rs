@@ -7,11 +7,11 @@ use std::process::Command;
 use std::str;
 
 pub fn json(args: TemplarResult) -> TemplarResult {
-    Ok(serde_json::from_str(&args?.to_string())?)
+    Ok(serde_json::from_str(&args?.to_string()).wrap()?)
 }
 
 pub fn yaml(args: TemplarResult) -> TemplarResult {
-    Ok(serde_yaml::from_str(&args?.to_string())?)
+    Ok(serde_yaml::from_str(&args?.to_string()).wrap()?)
 }
 
 pub fn file(args: TemplarResult) -> TemplarResult {

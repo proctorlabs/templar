@@ -8,7 +8,17 @@ pub struct Template(Arc<Node>);
 
 impl Template {
     pub fn render(&self, ctx: &dyn Context) -> Result<String> {
-        Ok(self.0.render(ctx)?)
+        match &*self.0 {
+            Node::Expr(nodes) => {
+                let results: Result<Vec<String>> =
+                    nodes.iter().map(|node| Ok(node.render(ctx)?)).collect();
+                Ok(results?.iter().fold(String::new(), |mut acc, s| {
+                    acc.push_str(&s);
+                    acc
+                }))
+            }
+            v => v.render(ctx),
+        }
     }
 
     pub fn exec(&self, ctx: &dyn Context) -> Result<Document> {

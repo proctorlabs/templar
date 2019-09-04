@@ -55,11 +55,11 @@ impl Templar {
 
     #[inline]
     pub fn parse_json(&self, json: &str) -> Result<TemplateTree> {
-        Ok(self.parse_tree(&serde_json::from_str(json)?)?)
+        Ok(self.parse_tree(&serde_json::from_str(json).wrap()?)?)
     }
 
     #[inline]
     pub fn parse_yaml(&self, yml: &str) -> Result<TemplateTree> {
-        Ok(self.parse_tree(&serde_yaml::from_str(yml)?)?)
+        Ok(self.parse_tree(&serde_yaml::from_str(yml).wrap()?)?)
     }
 }
