@@ -1,0 +1,64 @@
+#!/usr/bin/env -S bash -c 'docker run -it -u $UID:$UID --rm -v $PWD:/src -w /src proctorlabs/rust-builder cargo make --makefile $@' -a
+[env]
+RUST_TARGET = "x86_64-unknown-linux-gnu"
+BIN_NAME = "${CARGO_MAKE_CRATE_NAME}"
+OUTPUT_DIR = "target/${RUST_TARGET}/release/"
+LOCAL_INSTALL_DIR = "/usr/local/bin/"
+TAR_FILENAME = "${BIN_NAME}.tar.xz"
+TAR_PATH = "${OUTPUT_DIR}${TAR_FILENAME}"
+DEB_PATH = "target/${RUST_TARGET}/debian/${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64.deb"
+RELEASE_TAG = "${CARGO_MAKE_CRATE_VERSION}-beta1"
+
+[env.musl]
+RUST_TARGET = "x86_64-unknown-linux-musl"
+
+[tasks.build]
+description = "Build Templar"
+command = "cargo"
+args = ["build", "--all-features", "--target", "${RUST_TARGET}", "--bin", "templar"]
+
+[tasks.build-release]
+description = "Build Templar"
+command = "cargo"
+args = ["build", "--all-features", "--target", "${RUST_TARGET}", "--bin", "templar", "--release"]
+
+[tasks.package-tar]
+description = "Create tar package"
+script = [
+    "cd ${OUTPUT_DIR}",
+    "strip ${BIN_NAME}",
+    "tar -cvJf ${TAR_FILENAME} ${BIN_NAME}"
+]
+dependencies = ["build-release"]
+
+[tasks.package-deb]
+description = "Create deb package"
+install_crate = "cargo-deb"
+command = "cargo"
+args = ["deb", "--target", "${RUST_TARGET}", "--no-build"]
+dependencies = ["build-release"]
+
+[tasks.release-tar]
+description = "Release tar package"
+command = "hub"
+args = ["release", "create", "-p", "-m", "Automated Prerelease", "-a", "${TAR_PATH}", "${RELEASE_TAG}"]
+dependencies = ["package-tar"]
+
+[tasks.release-deb]
+description = "Release tar package"
+command = "hub"
+args = ["release", "create", "-p", "-m", "Automated Prerelease", "-a", "${DEB_PATH}", "${RELEASE_TAG}"]
+dependencies = ["package-deb"]
+
+[tasks.install]
+description = "Install templar locally from source"
+script = [
+    "cd ${OUTPUT_DIR}",
+    "strip ${BIN_NAME}",
+    "sudo cp ${BIN_NAME} ${LOCAL_INSTALL_DIR}${BIN_NAME}"
+]
+dependencies = ["build-release"]
+
+[tasks.uninstall]
+description = "Uninstall local templar"
+script = ["sudo rm ${LOCAL_INSTALL_DIR}${BIN_NAME}"]

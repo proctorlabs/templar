@@ -1,0 +1,30 @@
+resources:
+  containers:
+    - container: rust-builder
+      image: proctorlabs/rust-builder
+
+trigger:
+  branches:
+    include: ["*"]
+  tags:
+    include: ["*"]
+
+variables:
+  RELEASE_TAG: "$(Build.SourceBranchName)"
+  IS_TAG: "${{ startsWith(variables['Build.SourceBranch'], 'refs/tags/') }}"
+
+jobs:
+  - job: build
+
+    pool:
+      vmImage: "ubuntu-16.04"
+    container: rust-builder
+
+    steps:
+      - script: "cargo make build-release"
+        displayName: "Build package"
+      - script: "cargo make release-tar"
+        displayName: "Release to Github"
+        condition: eq( variables['IS_TAG'], 'True' )
+        env:
+          GITHUB_TOKEN: $(GITHUB_TOKEN)
