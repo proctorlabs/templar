@@ -13,14 +13,11 @@ macro_rules! parse_token {
     (expression : $rule:expr => $tree:expr) => {
         parse_token!(push: $tree.2.parse_match($rule.into_inner())? => $tree)
     };
-    (raw : $rule:expr => $tree:expr) => {
+    (content : $rule:expr => $tree:expr) => {
         $tree.0.push(Node::Data($rule.as_str().into()))
     };
     (template : $rule:expr => $tree:expr) => {
         $tree.0.push($tree.2.parse_match($rule.into_inner())?)
-    };
-    (replace : $rule:expr => $tree:expr) => {
-        $tree.0 = $tree.2.parse_match($rule.into_inner())?.make_vector()
     };
     (true => $tree:expr) => {
         parse_token!(push: Node::Data(true.into()) => $tree)
@@ -101,6 +98,31 @@ macro_rules! parse_token {
             )))
         } => $tree);
     };
+    ("if" : $rule:expr => $tree:expr) => {{
+        let mut condition = Node::Empty();
+        let mut contents = Node::Empty();
+        for pair in $rule.into_inner() {
+            match pair.as_rule() {
+                Rule::expression_cap => condition = $tree.2.parse_match(pair.into_inner())?,
+                Rule::template => contents = $tree.2.parse_match(pair.into_inner())?,
+                Rule::tag_start_comment
+                | Rule::tag_end_comment
+                | Rule::tag_start_expr
+                | Rule::tag_start_control
+                | Rule::tag_end_control
+                | Rule::tag_end_expr => {}
+                _ => parse_token!(!pair),
+            }
+        }
+        $tree.0.push(Node::Filter(Box::new((
+            condition.into(),
+            $tree.2.filters
+                .get("then")
+                .ok_or_else(|| TemplarError::FilterNotFound("then".into()))?
+                .clone(),
+            contents.into(),
+        ))));
+    }};
     (filter : $rule:expr => $tree:expr) => {{
         let mut tree: Tree = (vec![], None, $tree.2);
         let mut name = String::new();
@@ -168,12 +190,14 @@ macro_rules! parse_token {
 impl Templar {
     #[inline]
     pub fn parse_template(&self, input: &str) -> Result<Template> {
-        Ok(self
+        let result: Node = self
             .parse_match(
-                TemplarParser::parse(Rule::template, input)
+                TemplarParser::parse(Rule::template_root, input)
                     .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?,
             )?
-            .into())
+            .make_vector()
+            .into();
+        Ok(result.into())
     }
 
     #[inline]
@@ -191,9 +215,10 @@ impl Templar {
         for pair in pairs {
             match pair.as_rule() {
                 Rule::expression_cap => parse_token!(expression: pair => tree),
-                Rule::template => parse_token!(replace: pair => tree),
+                Rule::template => parse_token!(template: pair => tree),
                 Rule::template_block => parse_token!(template: pair => tree),
-                Rule::raw_block => parse_token!(raw: pair => tree),
+                Rule::content => parse_token!(content: pair => tree),
+                Rule::ctrl_block_if => parse_token!("if": pair => tree),
                 Rule::number_lit => parse_token!(number: pair => tree),
                 Rule::true_lit => parse_token!(true => tree),
                 Rule::false_lit => parse_token!(false => tree),
@@ -222,6 +247,7 @@ impl Templar {
                 _ => parse_token!(!pair),
             }
         }
+        println!("{:?}", tree.0);
         Ok(tree.0.into())
     }
 }

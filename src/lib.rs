@@ -9,7 +9,6 @@ something={{ context.value | base64}}
 full_context={{ context | json }} {# Need single line here, but json('pretty') will provide indentation #}
 password={{ shell('echo hunter2 | md5sum') }}
 ```
-
 */
 
 #[macro_use]

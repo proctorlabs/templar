@@ -62,6 +62,7 @@ builtin_filters! {
     "mod":modulus,
     "and":and,
     "or":or,
+    "then":then,
     "equals":equals,
     "not_equals":not_equals,
     "greater_than":greater_than,

@@ -19,15 +19,15 @@ pub enum Node {
 impl fmt::Debug for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Node::Filter(_) => write!(f, "Node::Filter"),
-            Node::Method(_) => write!(f, "Node::Function"),
-            Node::Empty() => write!(f, "Node::Empty"),
-            Node::Expr(inner) => inner.fmt(f),
-            Node::Data(inner) => inner.fmt(f),
-            Node::Value(inner) => inner.fmt(f),
-            Node::Array(inner) => inner.fmt(f),
-            Node::Map(inner) => inner.fmt(f),
-            Node::Error(inner) => inner.fmt(f),
+            Node::Filter(inner) => write!(f, "Node::Filter({:?} | {:?})", inner.0, inner.2),
+            Node::Method(inner) => write!(f, "Node::Function({:?})", inner.1),
+            Node::Empty() => write!(f, "Node::Empty()"),
+            Node::Expr(inner) => write!(f, "Node::Expr({:?})", inner),
+            Node::Data(inner) => write!(f, "Node::Data({:?})", inner),
+            Node::Value(inner) => write!(f, "Node::Value({:?})", inner),
+            Node::Array(inner) => write!(f, "Node::Array({:?})", inner),
+            Node::Map(inner) => write!(f, "Node::Map({:?})", inner),
+            Node::Error(inner) => write!(f, "Node::Error({:?})", inner),
         }
     }
 }
@@ -115,7 +115,10 @@ impl Node {
     }
 
     pub fn render(&self, ctx: &dyn Context) -> Result<String> {
-        Ok(format!("{}", self.exec(ctx).into_document()?))
+        match self {
+            Node::Empty() => Ok("".into()),
+            z => Ok(format!("{}", z.exec(ctx).into_document()?)),
+        }
     }
 }
 

@@ -71,3 +71,11 @@ pub fn less_than_equals(left: TemplarResult, right: TemplarResult) -> TemplarRes
 pub fn concat(left: TemplarResult, right: TemplarResult) -> TemplarResult {
     Ok(format!("{}{}", left?, right?).into())
 }
+
+pub fn then(condition: TemplarResult, contents: TemplarResult) -> TemplarResult {
+    if condition? == Document::Bool(true) {
+        contents
+    } else {
+        Ok("".into())
+    }
+}
