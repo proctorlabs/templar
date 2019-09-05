@@ -1,7 +1,6 @@
-/*!
-Templar CLI
+# Templar CLI
 
-# Usage
+## Usage
 
 ```bash
 templar 0.1.0
@@ -24,20 +23,3 @@ SUBCOMMANDS:
     expression    Run an expression directly
     template      Run a template
 ```
-*/
-
-pub use templar::error::*;
-pub use templar::*;
-
-mod cli;
-
-fn main() {
-    ::std::process::exit(match cli::run() {
-        Ok(_) => 0,
-        Err(e) => {
-            eprintln!("Failure!");
-            eprintln!("➜ {}", e);
-            2
-        }
-    })
-}

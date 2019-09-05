@@ -1,55 +1,71 @@
-#!/usr/bin/env -S bash -c 'docker run -it -u $UID:$UID --rm -v $PWD:/src -w /src proctorlabs/rust-builder cargo make --makefile $@' -a
+# ---- Profiles ----
 [env]
-RUST_TARGET = "x86_64-unknown-linux-gnu"
 BIN_NAME = "${CARGO_MAKE_CRATE_NAME}"
-OUTPUT_DIR = "target/${RUST_TARGET}/release/"
 LOCAL_INSTALL_DIR = "/usr/local/bin/"
-TAR_FILENAME = "${BIN_NAME}.tar.xz"
+RELEASE_TAG = "v${CARGO_MAKE_CRATE_VERSION}"
+RELEASE_TITLE = "Templar ${RELEASE_TAG}"
+DOCKER_BUILD_IMAGE = "proctorlabs/rust-builder"
+CRATE_DRY_RUN = "--dry-run"
+
+[env.release-libc]
+RELEASE_ARG = "--release"
+RUST_TARGET = "x86_64-unknown-linux-gnu"
+TOOLCHAIN_SUFFIX = "libc"
+OUTPUT_DIR = "target/${RUST_TARGET}/release/"
+TAR_FILENAME = "${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64_${TOOLCHAIN_SUFFIX}.tar.xz"
 TAR_PATH = "${OUTPUT_DIR}${TAR_FILENAME}"
 DEB_PATH = "target/${RUST_TARGET}/debian/${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64.deb"
-RELEASE_TAG = "${CARGO_MAKE_CRATE_VERSION}-beta1"
 
-[env.musl]
+[env.release-musl]
+RELEASE_ARG = "--release"
 RUST_TARGET = "x86_64-unknown-linux-musl"
+TOOLCHAIN_SUFFIX = "musl"
+OUTPUT_DIR = "target/${RUST_TARGET}/release/"
+TAR_FILENAME = "${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64_${TOOLCHAIN_SUFFIX}.tar.xz"
+TAR_PATH = "${OUTPUT_DIR}${TAR_FILENAME}"
 
+# ---- Development ----
 [tasks.build]
-description = "Build Templar"
+description = "Build project"
 command = "cargo"
-args = ["build", "--all-features", "--target", "${RUST_TARGET}", "--bin", "templar"]
+args = ["build", "--features", "bin", "--target", "${RUST_TARGET}", "--bin", "templar", "@@remove-empty(RELEASE_ARG)"]
 
-[tasks.build-release]
-description = "Build Templar"
+[tasks.run]
+description = "Run project"
 command = "cargo"
-args = ["build", "--all-features", "--target", "${RUST_TARGET}", "--bin", "templar", "--release"]
+args = ["run", "--features", "bin", "@@remove-empty(RELEASE_ARG)", "--", "${@}"]
 
-[tasks.package-tar]
-description = "Create tar package"
+[tasks.in-docker]
+description = "Run this cargo make command in docker"
+script = ["docker run --rm -it -u $UID:$UID -v $PWD:/src -v ~/.config/hub:/src/.config/hub:ro -w /src ${DOCKER_BUILD_IMAGE} cargo make ${@}"]
+
+[tasks.readme-dep-install]
+install_crate = "cargo-readme"
+command = "cargo"
+args = ["readme", "-o", "/dev/null"]
+private = true
+
+[tasks.readme]
+description = "Update documentation"
 script = [
-    "cd ${OUTPUT_DIR}",
-    "strip ${BIN_NAME}",
-    "tar -cvJf ${TAR_FILENAME} ${BIN_NAME}"
+    "cargo readme -t .ci/readme.tpl -i src/lib.rs -o README.md",
+    "cargo readme -t .ci/doc.tpl -i src/main.rs -o docs/CLI.md"
 ]
-dependencies = ["build-release"]
+dependencies = ["readme-dep-install"]
 
-[tasks.package-deb]
-description = "Create deb package"
-install_crate = "cargo-deb"
-command = "cargo"
-args = ["deb", "--target", "${RUST_TARGET}", "--no-build"]
-dependencies = ["build-release"]
+[tasks.validate]
+description = "Ensure project is cleaned up and has no warnings"
+script = [
+    "cargo verify-project > /dev/null",
+    "cargo fmt",
+    "cargo check",
+    "cargo clippy",
+    "cargo build",
+    "cargo test --all-features",
+    "cargo build --no-default-features"
+]
 
-[tasks.release-tar]
-description = "Release tar package"
-command = "hub"
-args = ["release", "create", "-p", "-m", "Automated Prerelease", "-a", "${TAR_PATH}", "${RELEASE_TAG}"]
-dependencies = ["package-tar"]
-
-[tasks.release-deb]
-description = "Release tar package"
-command = "hub"
-args = ["release", "create", "-p", "-m", "Automated Prerelease", "-a", "${DEB_PATH}", "${RELEASE_TAG}"]
-dependencies = ["package-deb"]
-
+# ---- Install from source ----
 [tasks.install]
 description = "Install templar locally from source"
 script = [
@@ -57,8 +73,65 @@ script = [
     "strip ${BIN_NAME}",
     "sudo cp ${BIN_NAME} ${LOCAL_INSTALL_DIR}${BIN_NAME}"
 ]
-dependencies = ["build-release"]
+dependencies = ["build"]
 
 [tasks.uninstall]
-description = "Uninstall local templar"
+description = "Delete local templar install"
 script = ["sudo rm ${LOCAL_INSTALL_DIR}${BIN_NAME}"]
+
+# ---- Packaging ----
+[tasks.package-deb]
+condition = { env_set = ["DEB_PATH"], platforms = ["linux"] }
+description = "Create debian package"
+install_crate = "cargo-deb"
+command = "cargo"
+args = ["deb", "--target", "${RUST_TARGET}", "--no-build"]
+dependencies = ["build"]
+
+[tasks.package-tar]
+condition = { env_set = ["TAR_FILENAME"] }
+description = "Create tar package"
+script = [
+    "cd ${OUTPUT_DIR}",
+    "strip ${BIN_NAME}",
+    "tar -cvJf ${TAR_FILENAME} ${BIN_NAME}"
+]
+dependencies = ["build"]
+
+# ---- Publishing ----
+[tasks.publish-draft]
+condition = { env_set = ["RELEASE_ARG"] }
+description = "Create a github release draft"
+command = "hub"
+args = ["release", "create", "-d", "-m", "${RELEASE_TITLE}", "${RELEASE_TAG}"]
+
+[tasks.publish-tar]
+condition = { env_set = ["RELEASE_ARG", "TAR_FILENAME"] }
+description = "Release tar package"
+command = "hub"
+args = ["release", "edit", "-m", "", "-a", "${TAR_PATH}", "${RELEASE_TAG}"]
+dependencies = ["package-tar"]
+
+[tasks.publish-deb]
+condition = { env_set = ["RELEASE_ARG", "DEB_PATH"], platforms = ["linux"] }
+description = "Release tar package"
+command = "hub"
+args = ["release", "edit", "-m", "", "-a", "${DEB_PATH}", "${RELEASE_TAG}"]
+dependencies = ["package-deb"]
+
+[tasks.publish-crate]
+condition = { env_set = ["RELEASE_ARG"] }
+description = "Release new crate"
+command = "cargo"
+args = ["publish", "--all-features", "@@remove-empty(CRATE_DRY_RUN)"]
+
+[tasks.publish-all]
+description = "Publish a new release"
+script = [
+    "cargo make -p release-libc publish-draft",
+    "cargo make -p release-musl publish-tar",
+    "cargo make -p release-musl publish-deb",
+    "cargo make -p release-libc publish-tar",
+    "cargo make -p release-libc publish-deb",
+    "cargo make -p release-libc publish-crate"
+]

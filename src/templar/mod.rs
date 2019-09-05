@@ -54,11 +54,13 @@ impl Templar {
     }
 
     #[inline]
+    #[cfg(feature = "json-extension")]
     pub fn parse_json(&self, json: &str) -> Result<TemplateTree> {
         Ok(self.parse_tree(&serde_json::from_str(json).wrap()?)?)
     }
 
     #[inline]
+    #[cfg(feature = "yaml-extension")]
     pub fn parse_yaml(&self, yml: &str) -> Result<TemplateTree> {
         Ok(self.parse_tree(&serde_yaml::from_str(yml).wrap()?)?)
     }

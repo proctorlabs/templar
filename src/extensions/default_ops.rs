@@ -9,7 +9,13 @@ pub fn subtract(left: TemplarResult, right: TemplarResult) -> TemplarResult {
 }
 
 pub fn divide(left: TemplarResult, right: TemplarResult) -> TemplarResult {
-    Ok((left?.as_i64().unwrap_or_default() / right?.as_i64().unwrap_or_default()).into())
+    let r = right?.as_i64();
+    if r == Some(0) {
+        return Err(TemplarError::RenderFailure(
+            "Attempted to divide by 0!".into(),
+        ));
+    }
+    Ok((left?.as_i64().unwrap_or_default() / r.unwrap_or_default()).into())
 }
 
 pub fn multiply(left: TemplarResult, right: TemplarResult) -> TemplarResult {

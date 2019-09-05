@@ -31,6 +31,7 @@ impl TemplarBuilder {
         self
     }
 
+    #[cfg(feature = "generics")]
     pub fn add_generic_function<
         'de,
         T: 'static + serde::Deserialize<'de>,
@@ -72,6 +73,7 @@ impl TemplarBuilder {
         self
     }
 
+    #[cfg(feature = "generics")]
     pub fn add_generic_filter<
         'de,
         T: 'static + serde::Deserialize<'de>,

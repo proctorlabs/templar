@@ -1,35 +1,72 @@
 [package]
 name = "templar"
-description = "Templating framework with first class support for configuration templating"
-version = "0.1.0"
 authors = ["Phil Proctor <philliptproctor@gmail.com>"]
+description = "Lightweight yet powerful templating"
+documentation = "https://docs.rs/templar"
+version = "0.1.0"
 edition = "2018"
 repository = "https://github.com/proctorlabs/templar"
-keywords = []
-categories = []
+keywords = ["cli", "template", "templating", "handlebars", "jinja"]
+categories = ["template-engine"]
 license = "MIT"
 readme = "README.md"
+exclude = [".ci/**", "docs/**"]
+
+[package.metadata.deb]
+maintainer = "Phil Proctor <philliptproctor@gmail.com>"
+copyright = "2019, templar development team"
+license-file = ["LICENSE", "5"]
+extended-description = """\
+Templar is a command for processing template files with \
+a Jinja2 inspired syntax and using a variety of data sources \
+as an input."""
+depends = "$auto"
+section = "utility"
+priority = "optional"
 
 [dependencies]
-#General dependencies
-unstructured = "0.3.1"
-serde = { version = "1.0", features = ["derive"] }
+# General dependencies
+unstructured = { version = "0.3.1", default_features = false, features = [] }
+lazy_static = "1.4"
 pest = "2.1"
 pest_derive = "2.1"
-lazy_static = "1.4"
-parking_lot = "0.9"
-serde_yaml = "0.8"
-serde_json = "1.0"
-base64 = "0.10"
 
-#Binary dependencies
+# Optional serde deps
+serde = { version = "1.0", optional = true, features = ["derive"] }
+serde_yaml = { version ="0.8", optional = true }
+serde_json = { version ="1.0", optional = true }
+toml = { version = "0.5", optional = true }
+serde-xml-rs = { version = "0.3", optional = true }
+
+# Misc optionals
+parking_lot = { version = "0.9", optional = true }
+base64 = { version = "0.10", optional = true }
+
+# Binary deps
 clap = { version = "2.33", optional = true }
 structopt = { version = "0.3", optional = true }
-serde-xml-rs = { version = "0.3", optional = true }
-toml = { version = "0.5", optional = true }
 
 [features]
-bin = ["clap", "structopt", "serde-xml-rs", "toml"]
+default = ["yaml-extension"]
+
+#ser/deser extensions
+generics = ["serde"]
+toml-extension = ["generics", "toml"]
+xml-extension = ["generics", "serde-xml-rs"]
+json-extension = ["generics", "serde_json"]
+yaml-extension = ["generics", "serde_yaml"]
+
+#other
+shared-context = ["parking_lot"]
+base64-extension = ["base64"]
+
+#groups
+serde-extensions = ["toml-extension", "xml-extension", "json-extension", "yaml-extension"]
+common-extensions = ["serde-extensions", "base64-extension"]
+full = ["serde-extensions", "base64-extension", "shared-context"]
+
+#binary
+bin = ["clap", "structopt", "common-extensions"]
 
 [lib]
 name = "templar"
@@ -39,3 +76,8 @@ path = "src/lib.rs"
 name = "templar"
 path = "src/main.rs"
 required-features = ["bin"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

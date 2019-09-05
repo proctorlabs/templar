@@ -1,5 +1,8 @@
-#Rust files
+# Rust files
 Cargo.lock
 **/*.rs.bk
 /target
+
+# Other misc files
 .cache
+.config

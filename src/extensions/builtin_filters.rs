@@ -1,5 +1,7 @@
 pub use super::default_ops::*;
 use crate::*;
+
+#[cfg(feature = "base64-extension")]
 use std::str;
 
 pub fn length(value: TemplarResult, _: TemplarResult) -> TemplarResult {
@@ -22,6 +24,7 @@ pub fn trim(value: TemplarResult, _: TemplarResult) -> TemplarResult {
     Ok(value?.to_string().trim().into())
 }
 
+#[cfg(feature = "base64-extension")]
 pub fn base64(value: TemplarResult, args: TemplarResult) -> TemplarResult {
     let switch = args?.to_string().to_lowercase();
     match switch.as_ref() {
@@ -71,6 +74,7 @@ pub fn index(value: TemplarResult, args: TemplarResult) -> TemplarResult {
     Ok(res)
 }
 
+#[cfg(feature = "json-extension")]
 pub fn json(value: TemplarResult, args: TemplarResult) -> TemplarResult {
     let arg_string = args?.to_string();
     Ok(if arg_string == "pretty" {
@@ -82,6 +86,7 @@ pub fn json(value: TemplarResult, args: TemplarResult) -> TemplarResult {
     })
 }
 
+#[cfg(feature = "yaml-extension")]
 pub fn yaml(value: TemplarResult, _: TemplarResult) -> TemplarResult {
     Ok(serde_yaml::to_string(&value?).unwrap_or_default().into())
 }

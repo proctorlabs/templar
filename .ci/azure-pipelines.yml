@@ -21,9 +21,10 @@ jobs:
     container: rust-builder
 
     steps:
-      - script: "cargo make build-release"
+      - script: "cargo make -p release-musl build"
         displayName: "Build package"
-      - script: "cargo make release-tar"
+
+      - script: "cargo make publish-all"
         displayName: "Release to Github"
         condition: eq( variables['IS_TAG'], 'True' )
         env:

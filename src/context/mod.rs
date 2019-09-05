@@ -1,6 +1,8 @@
-use parking_lot::RwLock;
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 use unstructured::Document;
+
+#[cfg(feature = "shared-context")]
+use {parking_lot::RwLock, std::sync::Arc};
 
 pub trait Context {
     fn merge(&self, doc: Document);
@@ -14,15 +16,18 @@ pub trait Context {
     fn get_path(&self, path: &[&String]) -> Document;
 }
 
+#[cfg(feature = "shared-context")]
 #[derive(Debug, Clone)]
 pub struct SharedContext(Arc<RwLock<Document>>);
 
+#[cfg(feature = "shared-context")]
 impl SharedContext {
     pub fn new(initial_value: Document) -> Self {
         SharedContext(Arc::new(RwLock::new(initial_value)))
     }
 }
 
+#[cfg(feature = "shared-context")]
 impl Context for SharedContext {
     fn merge(&self, doc: Document) {
         self.0.write().merge(doc);

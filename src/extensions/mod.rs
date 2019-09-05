@@ -15,10 +15,11 @@ pub type GenericFunction<'de, T, U> = fn(T) -> Result<U>;
 pub type Function = dyn Fn(TemplarResult) -> TemplarResult + Send + Sync;
 
 macro_rules! builtin_filters {
-    ($( $name:literal : $method:ident),*) => {
+    ($( $( #[ $attr:meta ] )* $name:literal : $method:ident),*) => {
         pub fn default_filters() -> HashMap<String, Arc<Filter>> {
             let mut res = HashMap::new();
             $(
+                $( #[ $attr ] )*
                 res.insert($name.into(), Arc::new(builtin_filters::$method) as Arc<Filter>);
             )*
             res
@@ -27,10 +28,11 @@ macro_rules! builtin_filters {
 }
 
 macro_rules! builtin_functions {
-    ($( $name:literal : $method:ident),*) => {
+    ($( $( #[ $attr:meta ] )* $name:literal : $method:ident),*) => {
         pub fn default_functions() -> HashMap<String, Arc<Function>> {
             let mut res = HashMap::new();
             $(
+                $( #[ $attr ] )*
                 res.insert($name.into(), Arc::new(builtin_functions::$method) as Arc<Function>);
             )*
             res
@@ -39,8 +41,11 @@ macro_rules! builtin_functions {
 }
 
 builtin_functions! {
+    #[cfg(feature = "json-extension")]
     "json":json,
+    #[cfg(feature = "yaml-extension")]
     "yaml":yaml,
+    #[cfg(feature = "yaml-extension")]
     "yml":yaml,
     "file":file,
     "env":env,
@@ -72,11 +77,15 @@ builtin_filters! {
     "lower":lower,
     "upper":upper,
     "trim":trim,
+    #[cfg(feature = "yaml-extension")]
     "yaml":yaml,
+    #[cfg(feature = "yaml-extension")]
     "yml":yaml,
+    #[cfg(feature = "json-extension")]
     "json":json,
     "split":split,
     "index":index,
+    #[cfg(feature = "base64-extension")]
     "base64":base64,
     "join":join,
     "string":string,

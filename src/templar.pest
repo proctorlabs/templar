@@ -22,10 +22,11 @@ function  = { ident ~ args }
 oper  = _{ op ~ expression }
 
 // Identifiers
-ident     = ${ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")*? }
-value_key = ${ "[" ~ string_lit ~ "]"}
-value_id  = _{ ( "." ~ ident) | value_key }
-value     = @{ ident ~ (value_id)* }
+ident      = ${ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")*? }
+value_key  = ${ "[" ~ string_lit ~ "]"}
+value_id   = _{ ( "." ~ ident) | value_key }
+root_ident = _{ "." }
+value      = @{ (ident | root_ident) ~ (value_id)* }
 
 // Literals
 literal     = _{ (bool_lit | number_lit | string_lit | null_lit | array_lit | map_lit) ~ !ASCII_ALPHANUMERIC }

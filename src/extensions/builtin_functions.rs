@@ -6,10 +6,12 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::str;
 
+#[cfg(feature = "json-extension")]
 pub fn json(args: TemplarResult) -> TemplarResult {
     Ok(serde_json::from_str(&args?.to_string()).wrap()?)
 }
 
+#[cfg(feature = "yaml-extension")]
 pub fn yaml(args: TemplarResult) -> TemplarResult {
     Ok(serde_yaml::from_str(&args?.to_string()).wrap()?)
 }
