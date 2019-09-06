@@ -1,4 +1,7 @@
+mod operation;
+
 use crate::*;
+pub(crate) use operation::*;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::Arc;
@@ -8,8 +11,9 @@ pub enum Node {
     Expr(Vec<Node>),
     Data(Document),
     Value(Vec<String>),
+    Operation(Operation),
     Filter(Box<(Node, Arc<Filter>, Node)>),
-    Method(Box<(Arc<Function>, Node)>),
+    Function(Box<(Arc<Function>, Node)>),
     Array(Vec<Node>),
     Map(BTreeMap<Document, Node>),
     Empty(),
@@ -20,14 +24,15 @@ impl fmt::Debug for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Node::Filter(inner) => write!(f, "Node::Filter({:?} | {:?})", inner.0, inner.2),
-            Node::Method(inner) => write!(f, "Node::Function({:?})", inner.1),
-            Node::Empty() => write!(f, "Node::Empty()"),
+            Node::Function(inner) => write!(f, "Node::Function({:?})", inner.1),
             Node::Expr(inner) => write!(f, "Node::Expr({:?})", inner),
+            Node::Operation(inner) => write!(f, "Node::Operation({:?})", inner),
             Node::Data(inner) => write!(f, "Node::Data({:?})", inner),
             Node::Value(inner) => write!(f, "Node::Value({:?})", inner),
             Node::Array(inner) => write!(f, "Node::Array({:?})", inner),
             Node::Map(inner) => write!(f, "Node::Map({:?})", inner),
             Node::Error(inner) => write!(f, "Node::Error({:?})", inner),
+            Node::Empty() => write!(f, "Node::Empty()"),
         }
     }
 }
@@ -68,6 +73,7 @@ impl Node {
             Self::Value(a) => {
                 Self::Data(ctx.get_path(&a.iter().map(|a| a).collect::<Vec<&String>>()))
             }
+            Self::Operation(op) => op.exec(ctx),
             Self::Filter(b) => {
                 let (piped, filter, args) = (&b.0, &b.1, &b.2);
                 let p = piped.exec(ctx).into_document();
@@ -94,7 +100,7 @@ impl Node {
                 }
                 Self::Data(map.into())
             }
-            Self::Method(m) => {
+            Self::Function(m) => {
                 let (function, args) = (&m.0, &m.1);
                 let a = args.exec(ctx).into_document();
                 function(a).into()

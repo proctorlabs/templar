@@ -1,34 +1,36 @@
-ws = _{ " " | "\t" | "\n" | "\r" }
+wsc = _{ " " | "\t" | "\n" | "\r" }
+ws = _{ wsc* }
 
 // A whole template, whitespace on either end will be trimmed
 template_root = _{ SOI ~ template+ ~ EOI }
-template      = ${ content | comment_block | template_block | ctrl_block }
+template      = ${ content | comment_block | template_block | control_block }
 
 // All templating tags
-tag_start_expr    = _{ "{{" | (ws* ~ "{{-") }
-tag_end_expr      = _{ "}}" | ("-}}" ~ ws*) }
-tag_start_comment = _{ "{#" | (ws* ~ "{#-") }
-tag_end_comment   = _{ "#}" | ("-#}" ~ ws*) }
-tag_start_control = _{ "{%" | (ws* ~ "{%-") }
-tag_end_control   = _{ "%}" | ("-%}" ~ ws*) }
+tag_start_expr    = _{ "{{" | (ws ~ "{{-") }
+tag_end_expr      = _{ "}}" | ("-}}" ~ ws) }
+tag_start_comment = _{ "{#" | (ws ~ "{#-") }
+tag_end_comment   = _{ "#}" | ("-#}" ~ ws) }
+tag_start_control = _{ "{%" | (ws ~ "{%-") }
+tag_end_control   = _{ "%}" | ("-%}" ~ ws) }
 tag_start         = _{ tag_start_expr | tag_start_comment | tag_start_control }
 tag_end           = _{ tag_end_expr | tag_end_comment | tag_end_control }
 
-// Template expressions
-expression        = _{ ws* ~ (inner | literal | function | value) ~ operation* ~ ws* }
+// Expressions and expression containers
+expression        = _{ ws ~ (inner | literal | function | value) ~ operation* ~ ws }
 expression_cap    = !{ expression }
 expression_vararg = _{ (expression_cap ~ ("," ~ expression_cap)*)? }
 inner             = _{ "(" ~ expression_cap ~ ")" }
 args              = { "(" ~ expression_vararg ~ ")" }
 
-// Blocks, containing templates or other chunks of data
-content        = { (!tag_start ~ (ANY | ws))+ }
-template_block = @{ tag_start_expr ~ (!tag_end_expr ~ expression_cap) ~ tag_end_expr }
+// Blocks e.g. {{ }} {# #} {% %}
+content        = { (!tag_start ~ (ANY | wsc))+ }
+template_block = { tag_start_expr ~ (!tag_end_expr ~ expression_cap) ~ tag_end_expr }
 comment_block  = _{ tag_start_comment ~ (!tag_end_comment ~ ANY)* ~ tag_end_comment }
+control_block  = _{ ctrl_block_if }
 
 // Operations
-operation = _{ ws* ~ ( oper | filter ) ~ ws* }
-filter    = !{ "|" ~ ws* ~ ident ~ args? }
+operation = _{ ws ~ ( oper | filter ) ~ ws }
+filter    = !{ "|" ~ ws ~ ident ~ args? }
 function  = !{ ident ~ args }
 oper  = _{ op ~ expression }
 
@@ -40,29 +42,42 @@ root_ident = _{ "." }
 value      = @{ (ident | root_ident) ~ (value_id)* }
 
 // Literals
-literal     = _{ (bool_lit | number_lit | string_lit | null_lit | array_lit | map_lit) ~ !ASCII_ALPHANUMERIC }
 literal_cap = ${ literal }
+literal     = _{ bool_lit | number_lit | string_lit | null_lit | array_lit | map_lit }
 bool_lit    = _{ true_lit | false_lit }
-true_lit    = { "true" | "yes" }
-false_lit   = { "false" | "no" }
-null_lit    = { "null" | "nil" }
+
+true_lit    = @{ "true" | "yes" }
+false_lit   = @{ "false" | "no" }
+null_lit    = @{ "null" | "nil" }
 number_lit  = @{ "-"? ~ ASCII_DIGIT+ }
+
 string_lit  = ${ "'" ~ str_single ~ "'" }
 str_single  = @{ (!"'" ~ ("\\'" | ANY))* }
-array_lit   = { "[" ~ expression_vararg  ~ "]"}
-map_lit     = !{ "{" ~ (map_kvp ~ ("," ~ map_kvp)*)? ~ "}" }
-map_kvp     = _{ literal_cap ~ ":" ~ expression_cap }
+
+array_lit   = @{ "[" ~ ws ~ expression_vararg ~ ws ~ "]"}
+
+map_lit     = @{ "{" ~ ws ~ (map_kvp ~ ws ~ ("," ~ ws ~ map_kvp)*)? ~ ws ~ "}" }
+map_kvp     = _{ literal_cap ~ ws ~ ":" ~ ws ~ expression_cap }
 
 // Control blocks
-ctrl_block     = _{ ctrl_block_if }
-ctrl_block_if  = !{ tag_start_control ~ ws* ~ kw_if ~  ws* ~ expression_cap ~  ws* ~ tag_end_control ~ template+ ~ ctrl_block_end }
-ctrl_block_end = _{ tag_start_control ~  ws* ~ kw_end ~  ws* ~ tag_end_control }
+ctrl_block_if   = {
+    tag_start_control ~ ws ~ kw_if ~ ws ~ expression_cap ~ ws ~ tag_end_control ~
+    template+ ~
+    (ctrl_block_end | ctrl_block_else)
+}
+ctrl_block_else = {
+    tag_start_control ~ ws ~ kw_else ~ ws ~ tag_end_control ~
+    template+ ~
+    ctrl_block_end
+}
+ctrl_block_end  = _{ tag_start_control ~ ws ~ kw_end ~ ws ~ tag_end_control }
 
 // Control keywords
-kw_if  = _{ "if" }
-kw_for = _{ "for" }
-kw_in  = _{ "in" }
-kw_end = _{ "end" }
+kw_if   = _{ "if" ~ wsc+ }
+kw_for  = _{ "for" ~ wsc+ }
+kw_in   = _{ "in" ~ wsc+ }
+kw_else = _{ "else" }
+kw_end  = _{ "end" }
 
 // Operators
 op  = _{ op_add | op_sub | op_div | op_mlt | op_mod | op_and | op_or | op_eq | op_ne | op_gt | op_gte | op_lt | op_lte | op_cat }

@@ -47,7 +47,7 @@ pub struct Options {
     pub set: Vec<(String, String)>,
 
     /// File to parse and load into the templating context
-    #[structopt(short, long, number_of_values = 1)]
+    #[structopt(short, long, number_of_values = 1, multiple = true)]
     pub input: Vec<PathBuf>,
 
     /// Output to send the result to, defaults to stdout

@@ -92,11 +92,7 @@ test_expressions! {
     order_left_to_right_2: "20+5/5" != 21i64;
     order_with_inner_1: "20+(5/5)" == 21i64;
     order_with_inner_2: "20+(5*5)" == 45i64;
-    order_with_complex_inner: "20+(5 + 5 | add(3))" == 33i64;
-
-    // alt syntax
-    add_as_filter: "1 | add(2)" == 3i64;
-    sub_as_filter: "1 | subtract(2)" == -1i64;
+    order_with_complex_inner: "20+(5 + 5 + (2 + 1))" == 33i64;
 
     // arrays
     get_index_of_array: "[1,2,3] | index(1)" == 2i64;

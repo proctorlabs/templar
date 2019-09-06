@@ -60,8 +60,6 @@ fn run_template(options: &Options, file: &PathBuf) -> Result<()> {
     let ctx = build_context(options)?;
     let template_contents = read_file(file)?;
     let template = Templar::global().parse_template(&template_contents)?;
-
-    println!("{:?}", template);
     write_output(options, template.render(&ctx)?)
 }
 
