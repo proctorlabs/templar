@@ -2,8 +2,9 @@ wsc = _{ " " | "\t" | "\n" | "\r" }
 ws = _{ wsc* }
 
 // A whole template, whitespace on either end will be trimmed
-template_root = _{ SOI ~ template+ ~ EOI }
-template      = ${ content | comment_block | template_block | control_block }
+template_root  = _{ SOI ~ template+ ~ EOI }
+template       = _{ content | comment_block | template_block | control_block }
+template_inner = ${ template* }
 
 // All templating tags
 tag_start_expr    = _{ "{{" | (ws ~ "{{-") }
@@ -61,19 +62,19 @@ map_kvp     = _{ literal_cap ~ ws ~ ":" ~ ws ~ expression_cap }
 
 // Control blocks
 ctrl_block_if   = {
-    tag_start_control ~ ws ~ kw_if ~ ws ~ expression_cap ~ ws ~ tag_end_control ~
-    template+ ~
+    tag_start_control ~ ws ~ kw_if ~ expression_cap ~ ws ~ tag_end_control ~
+    template_inner ~
     (ctrl_block_end | ctrl_block_else)
 }
 ctrl_block_else = {
-    tag_start_control ~ ws ~ kw_else ~ ws ~ tag_end_control ~
-    template+ ~
-    ctrl_block_end
+    tag_start_control ~ ws ~ kw_else ~ ws ~ (kw_if ~ expression_cap)? ~ tag_end_control ~
+    template_inner ~
+    (ctrl_block_end | ctrl_block_else)
 }
-ctrl_block_end  = _{ tag_start_control ~ ws ~ kw_end ~ ws ~ tag_end_control }
+ctrl_block_end  = { tag_start_control ~ ws ~ kw_end ~ ws ~ tag_end_control }
 
 // Control keywords
-kw_if   = _{ "if" ~ wsc+ }
+kw_if   = { "if" ~ wsc+ }
 kw_for  = _{ "for" ~ wsc+ }
 kw_in   = _{ "in" ~ wsc+ }
 kw_else = _{ "else" }

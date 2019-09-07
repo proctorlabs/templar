@@ -28,25 +28,58 @@ mod tree {
             }
         }
 
-        pub fn set_op(&mut self, op: Operations) {
+        pub fn set_op(&mut self, op: Operations) -> Result<()> {
+            if self.current_op.is_some() {
+                self.finish_op()?;
+            }
             self.current_op = Some(op);
+            Ok(())
         }
 
-        pub fn push(&mut self, node: Node) -> Result<()> {
-            if self.current_op.is_some() {
-                let op = self.current_op.take().unwrap();
-                let mut tree = replace(&mut self.tree, vec![]);
-                tree.push(node);
+        pub fn finish_op(&mut self) -> Result<()> {
+            if let Some(ref op) = self.current_op {
+                let len = self.tree.len();
+                let metadata = op.metadata();
+                if len < metadata.minimum_nodes as usize {
+                    return Err(TemplarError::ParseFailure(format!(
+                        "{:?} op requires at least {} nodes",
+                        op, metadata.minimum_nodes
+                    )));
+                }
+                if let Some(max) = metadata.maximum_nodes {
+                    if len > max as usize {
+                        return Err(TemplarError::ParseFailure(format!(
+                            "{:?} op has a maximum of {} nodes",
+                            op, max
+                        )));
+                    }
+                    while self.tree.len() < max as usize {
+                        self.tree.push(Node::Empty())
+                    }
+                }
+                let tree = replace(&mut self.tree, vec![]);
                 let node = Node::Operation(op.build(tree));
                 self.tree.push(node);
                 self.current_op = None;
-            } else {
-                self.tree.push(node);
+            }
+            Ok(())
+        }
+
+        pub fn push(&mut self, node: Node) -> Result<()> {
+            self.tree.push(node);
+            if let Some(ref op) = self.current_op {
+                let metadata = op.metadata();
+                if metadata.maximum_nodes.is_some()
+                    && self.tree.len() == metadata.maximum_nodes.unwrap() as usize
+                {
+                    return self.finish_op();
+                }
             }
             Ok(())
         }
 
         pub fn filter(&mut self, filter: &str, args: Node) -> Result<()> {
+            self.finish_op()?;
             let tree = replace(&mut self.tree, vec![]);
             self.tree = vec![Node::Filter(Box::new((
                 tree.into(),
@@ -60,16 +93,13 @@ mod tree {
             Ok(())
         }
 
-        pub fn into_node(self) -> Result<Node> {
-            if self.current_op != None {
-                return Err(TemplarError::ParseFailure(
-                    "Operation not completed!".into(),
-                ));
-            }
+        pub fn into_node(mut self) -> Result<Node> {
+            self.finish_op()?;
             Ok(self.tree.into())
         }
 
-        pub fn into_nodes(self) -> Result<Vec<Node>> {
+        pub fn into_nodes(mut self) -> Result<Vec<Node>> {
+            self.finish_op()?;
             Ok(self.tree)
         }
     }
@@ -83,7 +113,7 @@ macro_rules! parse_token {
         $tree.push(Node::Data($rule.as_str().into()))?
     };
     (template : $rule:expr => $tree:expr) => {
-        $tree.push($tree.templar.parse_match($rule.into_inner())?)?
+        $tree.push($tree.templar.parse_match($rule.into_inner())?.set_operation(Operations::Concat))?
     };
     (true => $tree:expr) => {
         $tree.push(Node::Data(true.into()))?;
@@ -101,7 +131,7 @@ macro_rules! parse_token {
         $tree.push($tree.templar.parse_match($rule.into_inner())?)?;
     };
     (op : $name:ident => $tree:expr) => {
-        $tree.set_op(Operations::$name)
+        $tree.set_op(Operations::$name)?
     };
     (ident : $rule:expr) => {
         $rule.as_str().into()
@@ -164,25 +194,6 @@ macro_rules! parse_token {
             )))
         })?;
     };
-    (control "if" : $rule:expr => $tree:expr) => {{
-        let mut condition = Node::Empty();
-        let mut contents = Node::Empty();
-        for pair in $rule.into_inner() {
-            match pair.as_rule() {
-                Rule::expression_cap => condition = $tree.templar.parse_match(pair.into_inner())?,
-                Rule::template => contents = $tree.templar.parse_match(pair.into_inner())?,
-                _ => parse_token!(!pair),
-            }
-        }
-        $tree.push(Node::Filter(Box::new((
-            condition.into(),
-            $tree.templar.filters
-                .get("then")
-                .ok_or_else(|| TemplarError::FilterNotFound("then".into()))?
-                .clone(),
-            contents.into(),
-        ))))?;
-    }};
     (filter : $rule:expr => $tree:expr) => {{
         let mut tree = ParseTree::new($tree.templar);
         let mut name = String::new();
@@ -228,14 +239,11 @@ macro_rules! parse_token {
 impl Templar {
     #[inline]
     pub fn parse_template(&self, input: &str) -> Result<Template> {
-        let result: Node = self
-            .parse_match(
-                TemplarParser::parse(Rule::template_root, input)
-                    .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?,
-            )?
-            .make_vector()
-            .into();
-        Ok(result.into())
+        let result: Node = self.parse_match(
+            TemplarParser::parse(Rule::template_root, input)
+                .map_err(|e| TemplarError::ParseFailure(format!("{}", e)))?,
+        )?;
+        Ok(result.set_operation(Operations::Concat).into())
     }
 
     #[inline]
@@ -253,10 +261,12 @@ impl Templar {
         for pair in pairs {
             match pair.as_rule() {
                 Rule::expression_cap => parse_token!(expression: pair => tree),
-                Rule::template => parse_token!(template: pair => tree),
+                Rule::template_inner => parse_token!(template: pair => tree),
                 Rule::template_block => parse_token!(template: pair => tree),
                 Rule::content => parse_token!(content: pair => tree),
-                Rule::ctrl_block_if => parse_token!(control "if": pair => tree),
+                Rule::kw_if => tree.set_op(Operations::IfThen)?,
+                Rule::ctrl_block_if | Rule::ctrl_block_else => parse_token!(template: pair => tree),
+                Rule::ctrl_block_end => tree.finish_op()?,
                 Rule::number_lit => parse_token!(number: pair => tree),
                 Rule::true_lit => parse_token!(true => tree),
                 Rule::false_lit => parse_token!(false => tree),

@@ -9,11 +9,19 @@ Try running this command with Templar:
 
 This template was run with the user {{ env('USER') }}
 
-{% if env('USER') | lower == 'root' -%}
-    {{ 'don\'t run as root!!' | upper }}
+{%- if env('USER') | lower == 'root' %}
+
+{{ 'don\'t run as root!!' | upper }}
+
+{% else if env('USER') == 'phil' %}
+
+Hi phil!
+
 {% else %}
-tttt
-{%- end %}
+
+Good, you aren't running as root
+
+{% end -%}
 
 The value 'Somekey' from example.json is {{ Somekey | default('NONE') }}
 

@@ -1,6 +1,5 @@
 mod builtin_filters;
 mod builtin_functions;
-mod default_ops;
 
 use crate::*;
 use std::collections::HashMap;
@@ -54,8 +53,6 @@ builtin_functions! {
 }
 
 builtin_filters! {
-    "then":then,
-
     //common
     "require":require,
     "default":default,

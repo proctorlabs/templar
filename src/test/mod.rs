@@ -46,6 +46,19 @@ fn call_generic_filter() -> Result<()> {
 }
 
 macro_rules! test_expressions {
+    (! $name:ident : $exp:literal ; $( $tail:tt )*) => {
+        #[test]
+        fn $name() -> Result<()> {
+            let tmpl = Templar::global().parse_expression($exp)?;
+            let context = StandardContext::new(Document::Unit);
+            let result = tmpl.exec(&context);
+            assert!(result.is_err());
+            Ok(())
+        }
+        test_expressions! {
+            $( $tail )*
+        }
+    };
     ($name:ident : $exp:literal == $res:expr ; $( $tail:tt )*) => {
         #[test]
         fn $name() -> Result<()> {
@@ -90,9 +103,10 @@ test_expressions! {
     modulus: "12 % 5" == 2i64;
     order_left_to_right_1: "5+5+5+5+5/5" == 5i64;
     order_left_to_right_2: "20+5/5" != 21i64;
-    order_with_inner_1: "20+(5/5)" == 21i64;
+    order_with_inner_1: "20+ (5/5)" == 21i64;
     order_with_inner_2: "20+(5*5)" == 45i64;
-    order_with_complex_inner: "20+(5 + 5 + (2 + 1))" == 33i64;
+    order_with_complex_inner: " 20+(5 + 5 + (2 + 1))" == 33i64;
+    !fail_math_op_against_string: "'hello' + 5";
 
     // arrays
     get_index_of_array: "[1,2,3] | index(1)" == 2i64;
@@ -114,6 +128,8 @@ test_expressions! {
     no_auto_trim_2: "' hello '" != "hello";
     concat_op: " 'hello ' ~ 'world'" == "hello world";
     concat_op_filter: " 'hello ' ~ 'world' | upper" == "HELLO WORLD";
+    concat_multiple: "'one ' ~ 'two ' ~ 'three'" == "one two three";
+    concat_non_string: "'one' ~ 1 ~ true" == "one1true";
 
     // encoding/decoding
     base64_encode_filter: "'Test' | base64" == "VGVzdA==";

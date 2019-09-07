@@ -44,13 +44,6 @@ impl Default for Node {
 }
 
 impl Node {
-    pub(crate) fn make_vector(self) -> Vec<Node> {
-        match self {
-            Self::Expr(inner) => inner,
-            _ => vec![self],
-        }
-    }
-
     pub(crate) fn exec(&self, ctx: &dyn Context) -> Node {
         match self {
             Self::Data(d) => Self::Data(d.clone()),
@@ -110,6 +103,13 @@ impl Node {
         }
     }
 
+    pub(crate) fn set_operation(self, op: Operations) -> Node {
+        match self {
+            Node::Expr(nodes) => Node::Operation(op.build(nodes)),
+            _ => self,
+        }
+    }
+
     pub(crate) fn into_document(self) -> Result<Document> {
         match self {
             Self::Data(d) => Ok(d),
@@ -123,7 +123,8 @@ impl Node {
     pub fn render(&self, ctx: &dyn Context) -> Result<String> {
         match self {
             Node::Empty() => Ok("".into()),
-            z => Ok(format!("{}", z.exec(ctx).into_document()?)),
+            Node::Data(Document::Unit) => Ok("null".into()),
+            other => Ok(other.exec(ctx).into_document()?.to_string()),
         }
     }
 }
