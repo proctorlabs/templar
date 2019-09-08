@@ -10,7 +10,6 @@ pub enum Node {
     Function(Box<(Arc<Function>, Node)>),
     Array(Vec<Node>),
     Map(BTreeMap<Document, Node>),
-    Empty(),
 }
 
 impl fmt::Debug for Node {
@@ -25,14 +24,13 @@ impl fmt::Debug for Node {
             Node::Array(inner) => write!(f, "Node::Array({:?})", inner),
             Node::Map(inner) => write!(f, "Node::Map({:?})", inner),
             Node::Scope(inner) => write!(f, "Node::Scope({:?})", inner),
-            Node::Empty() => write!(f, "Node::Empty()"),
         }
     }
 }
 
 impl Default for Node {
     fn default() -> Self {
-        Node::Empty()
+        Data::empty().into()
     }
 }
 
@@ -86,7 +84,6 @@ impl Node {
                     Err(e) => e.into(),
                 }
             }
-            Self::Empty() => Data::empty(),
         }
     }
 
@@ -115,21 +112,18 @@ impl Node {
     }
 }
 
-impl From<Result<Document>> for Node {
-    fn from(doc: Result<Document>) -> Node {
-        match doc {
-            Ok(d) => Self::Data(d.into()),
-            Err(e) => Self::Data(e.into()),
-        }
-    }
-}
-
 impl From<Vec<Node>> for Node {
     fn from(mut n: Vec<Node>) -> Node {
         match n.len() {
             1 => n.pop().unwrap(),
-            0 => Node::Empty(),
+            0 => Data::empty().into(),
             _ => Node::Expr(n),
         }
+    }
+}
+
+impl From<Data> for Node {
+    fn from(d: Data) -> Self {
+        Self::Data(d)
     }
 }
