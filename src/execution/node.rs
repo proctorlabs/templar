@@ -111,10 +111,7 @@ impl Node {
     }
 
     pub fn render(&self, ctx: &dyn Context) -> Result<String> {
-        match self {
-            Node::Empty() => Ok("".into()),
-            other => Ok(other.exec(ctx).into_document()?.to_string()),
-        }
+        self.exec(ctx).render()
     }
 }
 
