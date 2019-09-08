@@ -82,7 +82,7 @@ ctrl_block_end_scpe = _{ tag_start_control ~ ws ~ kw_end ~ wsc+ ~ kw_scpe ~ ws ~
 
 // Control block loop
 ctrl_block_loop = ${
-    tag_start_control ~ ws ~ kw_for ~ wsc+ ~ value ~ wsc+ ~ kw_in ~ wsc+ ~ value ~ ws ~ tag_end_control ~
+    tag_start_control ~ ws ~ kw_for ~ wsc+ ~ value ~ wsc+ ~ kw_in ~ wsc+ ~ expression_cap ~ ws ~ tag_end_control ~
     template_inner ~ ctrl_block_end_loop
 }
 ctrl_block_end_loop = @{ tag_start_control ~ ws ~ kw_end ~ wsc+ ~ kw_for ~ ws ~ tag_end_control }

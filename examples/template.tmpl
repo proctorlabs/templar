@@ -1,7 +1,6 @@
 This is a file that can be processed as a template.
 
-{{ 'val' = 'test' | default(val) }}
-
+--- Comment example
 {#-
 
 Try running this command with Templar:
@@ -9,38 +8,41 @@ Try running this command with Templar:
 
 #}
 
-{% for item in Array %}
-{{ item }}
-{% end for %}
-
+--- Value replacements
 This template was run with the user {{ env('USER') }}
 
-{{ 'scoped_val' = ('Not in a scope...' | upper) }}
+The value 'Somekey' from example.json is {{ Somekey | default('NONE') }}
+The package name from Cargo.toml is {{ package.name }}
+
+--- For loop examples
+Iterate over an array
+{%- for item in Array %}
+{{ item }}
+{%- end for %}
+
+Iterate over a dictionary
+{%- for item in Dict %}
+Key: {{ item.key }} -> Value: {{ item.value }}
+{%- end for %}
+
+--- Setting values
+{{- val = 'test' }}
+{{ val }}
+
+--- Scoping example
+{{ 'scoped_val' = ('Not in a scope...' | upper) -}}
 {{ scoped_val }}
-
-{% scope -%}
-
+{%- scope -%}
 {{ 'scoped_val' = 'I\'m in a scope!' }}
 {{ scoped_val }}
-
 {%- end scope %}
-
 {{ scoped_val }}
 
+--- If/Else Example
 {%- if env('USER') | lower == 'root' %}
-
 {{ 'don\'t run as root!!' | upper }}
-
 {% else if env('USER') == 'phil' %}
-
 Hi phil!
-
 {% else %}
-
 Good, you aren't running as root
-
 {% end if -%}
-
-The value 'Somekey' from example.json is {{ Somekey | default('NONE') }}
-
-The package name from Cargo.toml is {{ package.name }}

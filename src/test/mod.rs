@@ -141,5 +141,6 @@ test_expressions! {
     command_var_args: "command('echo', '-n', 'test') | key('stdout')" == "test";
 
     // set
-    test_set: "x = 'hello'" == Document::Unit;
+    test_set: "val = 'hello'" == "";
+    test_set_return: "val = 'hello' ~ val" == "hello";
 }

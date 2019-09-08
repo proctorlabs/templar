@@ -1,12 +1,4 @@
-mod operation;
-
-use crate::context::ScopedContext;
-use crate::*;
-pub(crate) use operation::*;
-use std::collections::BTreeMap;
-use std::fmt;
-use std::sync::Arc;
-use unstructured::Document;
+use super::*;
 
 pub enum Node {
     Expr(Vec<Node>),
@@ -45,66 +37,56 @@ impl Default for Node {
 }
 
 impl Node {
-    pub(crate) fn exec(&self, ctx: &dyn Context) -> Node {
+    pub(crate) fn exec(&self, ctx: &dyn Context) -> Data {
         match self {
-            Self::Data(d) => Self::Data(d.clone()),
+            Self::Data(d) => d.clone(),
             Self::Expr(a) => {
-                let mut res: Vec<Data> = vec![];
-                for node in a.iter() {
-                    match node.exec(ctx) {
-                        Self::Data(d) => res.push(d),
-                        error => return error,
-                    };
-                }
+                let mut res: Vec<Data> = a.iter().map(|n| n.exec(ctx)).collect();
                 if res.is_empty() {
-                    Self::Data(Document::Unit.into())
+                    Data::empty()
                 } else if res.len() == 1 {
-                    Self::Data(res.pop().unwrap())
+                    res.pop().unwrap()
                 } else {
-                    Self::Data(Data::from_vec(res))
+                    Data::from_vec(res)
                 }
             }
-            Self::Value(a) => Self::Data(
-                ctx.get_path(&a.iter().map(|a| a).collect::<Vec<&String>>())
-                    .into(),
-            ),
+            Self::Value(a) => {
+                Data::from(ctx.get_path(&a.iter().map(|a| a).collect::<Vec<&String>>()))
+            }
             Self::Operation(op) => op.exec(ctx),
             Self::Filter(b) => {
                 let (piped, filter, args) = (&b.0, &b.1, &b.2);
                 let p = piped.exec(ctx).into_document();
                 let a = args.exec(ctx).into_document();
-                filter(p, a).into()
+                match filter(p, a) {
+                    Ok(d) => d.into(),
+                    Err(e) => e.into(),
+                }
             }
             Self::Scope(i) => {
                 let local_context = ScopedContext::new(ctx);
                 i.exec(&local_context)
             }
-            Self::Array(s) => {
-                let mut elements = vec![];
-                for node in s.iter() {
-                    match node.exec(ctx) {
-                        Self::Data(d) => elements.push(d),
-                        error => return error,
-                    };
-                }
-                Self::Data(Data::from_vec(elements))
-            }
+            Self::Array(s) => Data::from_vec(s.iter().map(|n| n.exec(ctx)).collect()),
             Self::Map(m) => {
                 let mut map: BTreeMap<Document, Document> = BTreeMap::new();
                 for (key, node) in m.iter() {
-                    match node.exec(ctx) {
-                        Self::Data(d) => map.insert(key.clone(), d.into_doc()),
-                        error => return error,
+                    match node.exec(ctx).into_document() {
+                        Ok(d) => map.insert(key.clone(), d),
+                        Err(e) => return e.into(),
                     };
                 }
-                Self::Data(map.into())
+                map.into()
             }
             Self::Function(m) => {
                 let (function, args) = (&m.0, &m.1);
                 let a = args.exec(ctx).into_document();
-                function(a).into()
+                match function(a) {
+                    Ok(d) => d.into(),
+                    Err(e) => e.into(),
+                }
             }
-            Self::Empty() => Self::Data(Document::Unit.into()),
+            Self::Empty() => Data::empty(),
         }
     }
 
@@ -121,7 +103,7 @@ impl Node {
 
     pub(crate) fn into_document(self) -> Result<Document> {
         match self {
-            Self::Data(d) => Ok(d.result()?.into_doc()),
+            Self::Data(d) => Ok(d.into_document()?),
             _ => Err(TemplarError::RenderFailure(
                 "Attempted document conversion on unprocessed node".into(),
             )),

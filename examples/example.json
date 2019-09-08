@@ -1,4 +1,8 @@
 {
     "Somekey": "Somevalue",
-    "Array": [1, 2, 3]
+    "Array": [1, 2, 3],
+    "Dict": {
+        "key": "val",
+        "another": "val"
+    }
 }
