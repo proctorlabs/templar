@@ -1,3 +1,4 @@
 {
-    "Somekey": "Somevalue"
+    "Somekey": "Somevalue",
+    "Array": [1, 2, 3]
 }

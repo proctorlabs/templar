@@ -1,3 +1,4 @@
+use crate::context::ScopedContext;
 use crate::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -7,17 +8,8 @@ pub struct Template(Arc<Node>);
 
 impl Template {
     pub fn render(&self, ctx: &dyn Context) -> Result<String> {
-        match &*self.0 {
-            Node::Expr(nodes) => {
-                let results: Result<Vec<String>> =
-                    nodes.iter().map(|node| Ok(node.render(ctx)?)).collect();
-                Ok(results?.iter().fold(String::new(), |mut acc, s| {
-                    acc.push_str(&s);
-                    acc
-                }))
-            }
-            v => v.render(ctx),
-        }
+        let local_ctx = ScopedContext::new(ctx);
+        self.0.render(&local_ctx)
     }
 
     pub fn exec(&self, ctx: &dyn Context) -> Result<Document> {

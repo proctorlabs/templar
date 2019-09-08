@@ -139,4 +139,7 @@ test_expressions! {
     script_key_filter_1: " script('echo -n test') | key('stdout') " == "test";
     script_key_filter_2: " script('echo -n test') | key('status') " == 0;
     command_var_args: "command('echo', '-n', 'test') | key('stdout')" == "test";
+
+    // set
+    test_set: "x = 'hello'" == Document::Unit;
 }

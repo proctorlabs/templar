@@ -27,7 +27,7 @@ args              = { "(" ~ expression_vararg ~ ")" }
 content        = { (!tag_start ~ (ANY | wsc))+ }
 template_block = { tag_start_expr ~ (!tag_end_expr ~ expression_cap) ~ tag_end_expr }
 comment_block  = _{ tag_start_comment ~ (!tag_end_comment ~ ANY)* ~ tag_end_comment }
-control_block  = _{ ctrl_block_if }
+control_block  = _{ ctrl_block_if | ctrl_block_scope | ctrl_block_loop }
 
 // Operations
 operation = _{ ws ~ ( oper | filter ) ~ ws }
@@ -60,28 +60,59 @@ array_lit   = @{ "[" ~ ws ~ expression_vararg ~ ws ~ "]"}
 map_lit     = @{ "{" ~ ws ~ (map_kvp ~ ws ~ ("," ~ ws ~ map_kvp)*)? ~ ws ~ "}" }
 map_kvp     = _{ literal_cap ~ ws ~ ":" ~ ws ~ expression_cap }
 
-// Control blocks
+// Control blocks if/else
 ctrl_block_if   = {
-    tag_start_control ~ ws ~ kw_if ~ expression_cap ~ ws ~ tag_end_control ~
+    tag_start_control ~ ws ~ kw_if ~ wsc+ ~ expression_cap ~ ws ~ tag_end_control ~
     template_inner ~
-    (ctrl_block_end | ctrl_block_else)
+    (ctrl_block_end_if | ctrl_block_else)
 }
 ctrl_block_else = {
-    tag_start_control ~ ws ~ kw_else ~ ws ~ (kw_if ~ expression_cap)? ~ tag_end_control ~
+    tag_start_control ~ ws ~ kw_else ~ (wsc+ ~ kw_if ~ expression_cap)? ~ ws ~ tag_end_control ~
     template_inner ~
-    (ctrl_block_end | ctrl_block_else)
+    (ctrl_block_end_if | ctrl_block_else)
 }
-ctrl_block_end  = { tag_start_control ~ ws ~ kw_end ~ ws ~ tag_end_control }
+ctrl_block_end_if   = @{ tag_start_control ~ ws ~ kw_end ~ wsc+ ~ kw_if ~ ws ~ tag_end_control }
 
-// Control keywords
-kw_if   = { "if" ~ wsc+ }
-kw_for  = _{ "for" ~ wsc+ }
-kw_in   = _{ "in" ~ wsc+ }
+// Control block scope
+ctrl_block_scope = {
+    tag_start_control ~ ws ~ kw_scpe ~ ws ~ tag_end_control ~
+    template+ ~ ctrl_block_end_scpe
+}
+ctrl_block_end_scpe = _{ tag_start_control ~ ws ~ kw_end ~ wsc+ ~ kw_scpe ~ ws ~ tag_end_control }
+
+// Control block loop
+ctrl_block_loop = ${
+    tag_start_control ~ ws ~ kw_for ~ wsc+ ~ value ~ wsc+ ~ kw_in ~ wsc+ ~ value ~ ws ~ tag_end_control ~
+    template_inner ~ ctrl_block_end_loop
+}
+ctrl_block_end_loop = @{ tag_start_control ~ ws ~ kw_end ~ wsc+ ~ kw_for ~ ws ~ tag_end_control }
+
+// Keywords
+kw_if   = { "if" }
 kw_else = _{ "else" }
 kw_end  = _{ "end" }
+kw_scpe = _{ "scope" }
+kw_for  = _{ "for" }
+kw_in   = _{ "in" }
 
 // Operators
-op  = _{ op_add | op_sub | op_div | op_mlt | op_mod | op_and | op_or | op_eq | op_ne | op_gt | op_gte | op_lt | op_lte | op_cat }
+op  = _{
+    op_add |
+    op_sub |
+    op_div |
+    op_mlt |
+    op_mod |
+    op_and |
+    op_or |
+    op_eq |
+    op_ne |
+    op_gt |
+    op_gte |
+    op_lt |
+    op_lte |
+    op_cat |
+    op_set
+}
 op_and = { "&&" }
 op_or  = { "||" }
 op_eq  = { "==" }
@@ -96,3 +127,4 @@ op_div = { "/" }
 op_mlt = { "*" }
 op_mod = { "%" }
 op_cat = { "~" }
+op_set = { "=" ~ !"=" }

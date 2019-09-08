@@ -49,7 +49,7 @@ impl Templar {
         Ok(match doc {
             Document::String(s) => self.parse_template(&s)?,
             Document::Newtype(d) => self.parse(d)?,
-            _ => Node::Data(doc.clone()).into(),
+            _ => Node::Data(doc.clone().into()).into(),
         })
     }
 

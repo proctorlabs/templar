@@ -23,6 +23,7 @@ pub use context::SharedContext;
 pub use {
     self::{
         context::{Context, StandardContext},
+        data::Data,
         extensions::{Filter, Function, GenericFilter, GenericFunction, TemplarResult},
         nodes::Node,
         templar::*,
@@ -37,6 +38,7 @@ pub mod error;
 mod test;
 
 mod context;
+mod data;
 mod extensions;
 mod nodes;
 mod parser;

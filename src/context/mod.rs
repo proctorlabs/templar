@@ -1,10 +1,10 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, fmt::Debug, rc::Rc};
 use unstructured::Document;
 
 #[cfg(feature = "shared-context")]
 use {parking_lot::RwLock, std::sync::Arc};
 
-pub trait Context {
+pub trait Context: Debug {
     fn merge(&self, doc: Document);
 
     fn set(&self, doc: Document);
@@ -14,6 +14,47 @@ pub trait Context {
     fn get(&self) -> Document;
 
     fn get_path(&self, path: &[&String]) -> Document;
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ScopedContext<'c>(&'c dyn Context, Rc<RefCell<Document>>);
+
+impl<'c> ScopedContext<'c> {
+    pub fn new(ctx: &'c dyn Context) -> Self {
+        ScopedContext(ctx, Default::default())
+    }
+}
+
+impl<'c> Context for ScopedContext<'c> {
+    fn merge(&self, doc: Document) {
+        self.1.borrow_mut().merge(doc);
+    }
+
+    fn set(&self, doc: Document) {
+        self.1.borrow_mut().set(doc);
+    }
+
+    fn set_path(&self, path: &[&String], doc: Document) {
+        self.1.borrow_mut().set_path(doc, path);
+    }
+
+    fn get(&self) -> Document {
+        let local = self.1.borrow().clone();
+        if local != Document::Unit {
+            local
+        } else {
+            self.0.get()
+        }
+    }
+
+    fn get_path(&self, path: &[&String]) -> Document {
+        let local = self.1.borrow().get_path(path).clone();
+        if local != Document::Unit {
+            local
+        } else {
+            self.0.get_path(path)
+        }
+    }
 }
 
 #[cfg(feature = "shared-context")]

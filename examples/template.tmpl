@@ -1,5 +1,7 @@
 This is a file that can be processed as a template.
 
+{{ 'val' = 'test' | default(val) }}
+
 {#-
 
 Try running this command with Templar:
@@ -7,7 +9,23 @@ Try running this command with Templar:
 
 #}
 
+{% for item in Array %}
+{{ item }}
+{% end for %}
+
 This template was run with the user {{ env('USER') }}
+
+{{ 'scoped_val' = ('Not in a scope...' | upper) }}
+{{ scoped_val }}
+
+{% scope -%}
+
+{{ 'scoped_val' = 'I\'m in a scope!' }}
+{{ scoped_val }}
+
+{%- end scope %}
+
+{{ scoped_val }}
 
 {%- if env('USER') | lower == 'root' %}
 
@@ -21,7 +39,7 @@ Hi phil!
 
 Good, you aren't running as root
 
-{% end -%}
+{% end if -%}
 
 The value 'Somekey' from example.json is {{ Somekey | default('NONE') }}
 

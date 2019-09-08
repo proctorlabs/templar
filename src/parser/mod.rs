@@ -115,6 +115,14 @@ macro_rules! parse_token {
     (template : $rule:expr => $tree:expr) => {
         $tree.push($tree.templar.parse_match($rule.into_inner())?.set_operation(Operations::Concat))?
     };
+    (for : $rule:expr => $tree:expr) => {{
+        $tree.set_op(Operations::ForLoop)?;
+        $tree.finish_op()?;
+        return Ok($tree.into_node()?.into_scope())
+    }};
+    (scope : $rule:expr => $tree:expr) => {
+        $tree.push($tree.templar.parse_match($rule.into_inner())?.set_operation(Operations::Concat).into_scope())?
+    };
     (true => $tree:expr) => {
         $tree.push(Node::Data(true.into()))?;
     };
@@ -125,7 +133,7 @@ macro_rules! parse_token {
         $tree.push(Node::Data($rule.into_inner().as_str().replace("\\'", "'").into()))?;
     };
     (nil => $tree:expr) => {
-        $tree.push(Node::Data(Document::Unit))?;
+        $tree.push(Node::Data(Document::Unit.into()))?;
     };
     (args : $rule:expr => $tree:expr) => {
         $tree.push($tree.templar.parse_match($rule.into_inner())?)?;
@@ -260,23 +268,27 @@ impl Templar {
         let mut tree = ParseTree::new(self);
         for pair in pairs {
             match pair.as_rule() {
+                Rule::template_inner
+                | Rule::template_block
+                | Rule::ctrl_block_if
+                | Rule::ctrl_block_else
+                | Rule::ctrl_block_loop => parse_token!(template: pair => tree),
+                Rule::ctrl_block_end_loop => parse_token!(for: pair => tree),
+                Rule::ctrl_block_scope => parse_token!(scope: pair => tree),
+                Rule::ctrl_block_end_if => tree.finish_op()?,
                 Rule::expression_cap => parse_token!(expression: pair => tree),
-                Rule::template_inner => parse_token!(template: pair => tree),
-                Rule::template_block => parse_token!(template: pair => tree),
                 Rule::content => parse_token!(content: pair => tree),
-                Rule::kw_if => tree.set_op(Operations::IfThen)?,
-                Rule::ctrl_block_if | Rule::ctrl_block_else => parse_token!(template: pair => tree),
-                Rule::ctrl_block_end => tree.finish_op()?,
+                Rule::filter => parse_token!(filter: pair => tree),
+                Rule::function => parse_token!(fn: pair => tree),
+                Rule::value => parse_token!(value: pair => tree),
                 Rule::number_lit => parse_token!(number: pair => tree),
                 Rule::true_lit => parse_token!(true => tree),
                 Rule::false_lit => parse_token!(false => tree),
                 Rule::string_lit => parse_token!(str ' ': pair => tree),
                 Rule::null_lit => parse_token!(nil => tree),
-                Rule::value => parse_token!(value: pair => tree),
-                Rule::filter => parse_token!(filter: pair => tree),
-                Rule::function => parse_token!(fn: pair => tree),
                 Rule::array_lit => parse_token!(array: pair => tree),
                 Rule::map_lit => parse_token!(map: pair => tree),
+                Rule::kw_if => tree.set_op(Operations::IfThen)?,
                 Rule::op_add => parse_token!(op: Add => tree),
                 Rule::op_sub => parse_token!(op: Subtract => tree),
                 Rule::op_div => parse_token!(op: Divide => tree),
@@ -291,6 +303,7 @@ impl Templar {
                 Rule::op_lt => parse_token!(op: LessThan => tree),
                 Rule::op_lte => parse_token!(op: LessThanEquals => tree),
                 Rule::op_cat => parse_token!(op: Concat => tree),
+                Rule::op_set => parse_token!(op: Set => tree),
                 Rule::EOI => break,
                 _ => parse_token!(!pair),
             }
