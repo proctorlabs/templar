@@ -45,7 +45,7 @@ fn build_context(options: &Options) -> Result<StandardContext> {
         ctx.merge(parse_file(file)?);
     }
     for setter in options.set.iter() {
-        ctx.set_path(&[&setter.0], setter.1.to_string().into());
+        ctx.set_path(&[setter.0.clone().into()], setter.1.to_string().into());
     }
     Ok(ctx)
 }

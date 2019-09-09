@@ -1,5 +1,7 @@
 use std::fmt::Debug;
-use unstructured::Document;
+
+mod dynamic;
+pub use dynamic::*;
 
 mod scoped;
 pub(crate) use scoped::ScopedContext;
@@ -13,13 +15,22 @@ mod shared;
 pub use shared::SharedContext;
 
 pub trait Context: Debug {
-    fn merge(&self, doc: Document);
+    fn merge(&self, doc: Document) {
+        let orig = self.get();
+        self.set(orig + doc);
+    }
 
-    fn set(&self, doc: Document);
+    #[inline]
+    fn set(&self, doc: Document) {
+        self.set_path(&[], doc);
+    }
 
-    fn set_path(&self, path: &[&String], doc: Document);
+    fn set_path(&self, path: &[Document], doc: Document);
 
-    fn get(&self) -> Document;
+    #[inline]
+    fn get(&self) -> Document {
+        self.get_path(&[])
+    }
 
-    fn get_path(&self, path: &[&String]) -> Document;
+    fn get_path(&self, path: &[Document]) -> Document;
 }

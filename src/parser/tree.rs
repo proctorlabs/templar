@@ -45,7 +45,7 @@ impl<'a> ParseTree<'a> {
                 }
             }
             let tree = replace(&mut self.tree, vec![]);
-            let node = Node::Operation(op.build(tree));
+            let node = Node::Operation(Arc::new(op.build(tree)));
             self.tree.push(node);
             self.current_op = None;
         }
@@ -88,4 +88,5 @@ impl<'a> ParseTree<'a> {
     pub fn into_nodes(mut self) -> Result<Vec<Node>> {
         self.finish_op()?;
         Ok(self.tree)
-    }}
+    }
+}

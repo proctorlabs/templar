@@ -2,7 +2,7 @@ pub use super::*;
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
 #[derive(Debug, Clone)]
-pub(crate) struct ScopedContext<'c>(&'c dyn Context, Rc<RefCell<Document>>);
+pub(crate) struct ScopedContext<'c>(&'c dyn Context, Rc<RefCell<ContextMap>>);
 
 impl<'c> ScopedContext<'c> {
     pub fn new(ctx: &'c dyn Context) -> Self {
@@ -11,36 +11,22 @@ impl<'c> ScopedContext<'c> {
 }
 
 impl<'c> Context for ScopedContext<'c> {
-    fn merge(&self, doc: Document) {
-        self.1.borrow_mut().merge(doc);
+    fn set_path(&self, path: &[Document], doc: Document) {
+        self.1.borrow_mut().set(doc, path).unwrap_or_default();
     }
 
-    fn set(&self, doc: Document) {
-        self.1.borrow_mut().set(doc);
-    }
-
-    fn set_path(&self, path: &[&String], doc: Document) {
-        self.1.borrow_mut().set_path(doc, path);
-    }
-
-    fn get(&self) -> Document {
-        let local = self.1.borrow().clone();
-        let parent = self.0.get();
-        if local == Document::Unit {
-            return parent;
-        }
-        parent + local
-    }
-
-    fn get_path(&self, path: &[&String]) -> Document {
-        if path.is_empty() {
-            return self.get();
-        }
-        let local = self.1.borrow().get_path(path).clone();
+    fn get_path(&self, path: &[Document]) -> Document {
+        let local = self
+            .1
+            .borrow()
+            .exec(self, path)
+            .new_result()
+            .unwrap_or_default();
         let parent = self.0.get_path(path);
-        if local == Document::Unit {
-            return parent;
+        if local.is_unit() || local == Document::from("") {
+            parent
+        } else {
+            parent + local
         }
-        parent + local
     }
 }

@@ -1,11 +1,12 @@
 use super::*;
 
+#[derive(Clone)]
 pub enum Node {
     Expr(Vec<Node>),
     Data(Data),
     Scope(Box<Node>),
     Value(Vec<String>),
-    Operation(Operation),
+    Operation(Arc<Operation>),
     Filter(Box<(Node, Arc<Filter>, Node)>),
     Function(Box<(Arc<Function>, Node)>),
     Array(Vec<Node>),
@@ -49,13 +50,13 @@ impl Node {
                 }
             }
             Self::Value(a) => {
-                Data::from(ctx.get_path(&a.iter().map(|a| a).collect::<Vec<&String>>()))
+                Data::from(ctx.get_path(&a.iter().map(|a| a.into()).collect::<Vec<Document>>()))
             }
             Self::Operation(op) => op.exec(ctx),
             Self::Filter(b) => {
                 let (piped, filter, args) = (&b.0, &b.1, &b.2);
-                let p = piped.exec(ctx).into_document();
-                let a = args.exec(ctx).into_document();
+                let p = piped.exec(ctx).result();
+                let a = args.exec(ctx).result();
                 match filter(p, a) {
                     Ok(d) => d.into(),
                     Err(e) => e.into(),
@@ -69,7 +70,7 @@ impl Node {
             Self::Map(m) => {
                 let mut map: BTreeMap<Document, Document> = BTreeMap::new();
                 for (key, node) in m.iter() {
-                    match node.exec(ctx).into_document() {
+                    match node.exec(ctx).result() {
                         Ok(d) => map.insert(key.clone(), d),
                         Err(e) => return e.into(),
                     };
@@ -78,7 +79,7 @@ impl Node {
             }
             Self::Function(m) => {
                 let (function, args) = (&m.0, &m.1);
-                let a = args.exec(ctx).into_document();
+                let a = args.exec(ctx).result();
                 match function(a) {
                     Ok(d) => d.into(),
                     Err(e) => e.into(),
@@ -89,7 +90,7 @@ impl Node {
 
     pub(crate) fn set_operation(self, op: Operations) -> Node {
         match self {
-            Node::Expr(nodes) => Node::Operation(op.build(nodes)),
+            Node::Expr(nodes) => Node::Operation(Arc::new(op.build(nodes))),
             _ => self,
         }
     }
@@ -100,7 +101,7 @@ impl Node {
 
     pub(crate) fn into_document(self) -> Result<Document> {
         match self {
-            Self::Data(d) => Ok(d.into_document()?),
+            Self::Data(d) => Ok(d.result()?),
             _ => Err(TemplarError::RenderFailure(
                 "Attempted document conversion on unprocessed node".into(),
             )),

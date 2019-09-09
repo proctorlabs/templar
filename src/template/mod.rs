@@ -13,7 +13,11 @@ impl Template {
     }
 
     pub fn exec(&self, ctx: &dyn Context) -> Result<Document> {
-        self.0.exec(ctx).into_document()
+        self.0.exec(ctx).result()
+    }
+
+    pub(crate) fn root_node(&self) -> Arc<Node> {
+        self.0.clone()
     }
 }
 

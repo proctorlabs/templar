@@ -7,7 +7,12 @@ pub struct Data {
     error: Option<TemplarError>,
 }
 
+lazy_static! {
+    static ref EMPTY_DOC: Document = { Document::String("".into()) };
+}
+
 impl Data {
+    #[inline]
     pub fn empty() -> Data {
         Data {
             doc: None,
@@ -24,28 +29,37 @@ impl Data {
         }
     }
 
-    pub fn into_result(self) -> Result<Data> {
-        match self.error {
-            Some(e) => Err(e),
-            None => Ok(self),
-        }
-    }
-
+    #[inline]
     pub fn is_failed(&self) -> bool {
         self.error.is_some()
     }
 
-    pub fn into_document(self) -> Result<Document> {
+    pub fn result(self) -> Result<Document> {
         match (self.error, self.doc) {
             (Some(e), _) => Err(e),
             (_, Some(doc)) => Ok(doc),
-            _ => Ok("".into()),
+            _ => Ok(EMPTY_DOC.clone()),
+        }
+    }
+
+    pub fn new_result(&self) -> Result<Document> {
+        match (&self.error, &self.doc) {
+            (Some(e), _) => Err(e.clone()),
+            (_, Some(doc)) => Ok(doc.clone()),
+            _ => Ok(EMPTY_DOC.clone()),
+        }
+    }
+
+    pub fn ref_result(&self) -> Result<&Document> {
+        match (&self.error, &self.doc) {
+            (Some(e), _) => Err(e.clone()),
+            (_, Some(doc)) => Ok(doc),
+            _ => Ok(&EMPTY_DOC),
         }
     }
 
     pub fn from_vec(seq: Vec<Data>) -> Self {
-        let result: Result<Vec<Document>> =
-            seq.into_iter().map(|d| Ok(d.into_document()?)).collect();
+        let result: Result<Vec<Document>> = seq.into_iter().map(|d| Ok(d.result()?)).collect();
         match result {
             Ok(docs) => Data {
                 doc: Some(docs.into()),
@@ -60,6 +74,7 @@ impl Data {
 }
 
 impl<T: Into<Document>> From<T> for Data {
+    #[inline]
     fn from(doc: T) -> Self {
         Data {
             doc: Some(doc.into()),
@@ -69,6 +84,7 @@ impl<T: Into<Document>> From<T> for Data {
 }
 
 impl From<TemplarError> for Data {
+    #[inline]
     fn from(error: TemplarError) -> Self {
         Data {
             doc: None,
