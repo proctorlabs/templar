@@ -1,4 +1,0 @@
----
-somedict:
-  val1: value
-  val2: "{{ file('README.md') | split | index(0) }}"
