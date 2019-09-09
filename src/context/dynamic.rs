@@ -1,6 +1,5 @@
 use super::*;
 use crate::execution::{Data, Node};
-use crate::*;
 use std::collections::BTreeMap;
 use std::mem::replace;
 pub use unstructured::Document;
@@ -11,7 +10,7 @@ pub struct ContextMap {
 }
 
 impl ContextMap {
-    pub fn new(doc: Document) -> Self {
+    pub fn new<T: Into<ContextMapValue>>(doc: T) -> Self {
         let mut result = ContextMap::default();
         result.set(doc, &[]).unwrap_or_default();
         result
@@ -20,7 +19,6 @@ impl ContextMap {
     pub fn set<T: Into<ContextMapValue>>(&mut self, value: T, path: &[Document]) -> Result<()> {
         if path.is_empty() {
             let val: ContextMapValue = value.into();
-            println!("Value: {:?}", val);
             if let ContextMapValue::Map(map) = val {
                 for (k, v) in map.into_iter() {
                     self.root.insert(k, v);
@@ -45,7 +43,8 @@ impl ContextMap {
 
     pub fn exec(&self, ctx: &dyn Context, path: &[Document]) -> Data {
         if path.is_empty() {
-            return TemplarError::RenderFailure("Cannot get the root context (yet)!".into()).into();
+            let copy = ContextMapValue::Map(self.root.clone());
+            return copy.exec(ctx);
         }
         let mut target: Option<&ContextMapValue> = self.root.get(&path[0]);
         for p in path.iter().skip(1) {
@@ -106,6 +105,25 @@ impl From<Node> for ContextMapValue {
 impl From<Template> for ContextMapValue {
     fn from(val: Template) -> Self {
         ContextMapValue::Dynamic(val.root_node())
+    }
+}
+
+impl From<TemplateTree> for ContextMapValue {
+    fn from(val: TemplateTree) -> Self {
+        match val {
+            TemplateTree::Template(t) => t.into(),
+            TemplateTree::Sequence(s) => {
+                let result: Vec<ContextMapValue> = s.iter().map(|t| t.clone().into()).collect();
+                ContextMapValue::Seq(result)
+            }
+            TemplateTree::Mapping(m) => {
+                let result: BTreeMap<Document, ContextMapValue> = m
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone().into()))
+                    .collect();
+                ContextMapValue::Map(result)
+            }
+        }
     }
 }
 

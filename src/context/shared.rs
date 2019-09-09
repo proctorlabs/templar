@@ -6,17 +6,17 @@ use {parking_lot::RwLock, std::sync::Arc};
 pub struct SharedContext(Arc<RwLock<ContextMap>>);
 
 impl SharedContext {
-    pub fn new(initial_value: Document) -> Self {
+    pub fn new<T: Into<ContextMapValue>>(initial_value: T) -> Self {
         SharedContext(Arc::new(RwLock::new(ContextMap::new(initial_value))))
     }
 }
 
 impl Context for SharedContext {
-    fn set_path(&self, path: &[Document], doc: Document) {
-        self.0.write().set(doc, path).unwrap_or_default();
+    fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()> {
+        self.0.write().set(doc, path)
     }
 
-    fn get_path(&self, path: &[Document]) -> Document {
-        self.0.read().exec(self, path).result().unwrap_or_default()
+    fn get_path(&self, path: &[Document]) -> Data {
+        self.0.read().exec(self, path)
     }
 }

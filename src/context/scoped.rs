@@ -11,22 +11,20 @@ impl<'c> ScopedContext<'c> {
 }
 
 impl<'c> Context for ScopedContext<'c> {
-    fn set_path(&self, path: &[Document], doc: Document) {
-        self.1.borrow_mut().set(doc, path).unwrap_or_default();
+    fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()> {
+        self.1.borrow_mut().set(doc, path)
     }
 
-    fn get_path(&self, path: &[Document]) -> Document {
-        let local = self
-            .1
-            .borrow()
-            .exec(self, path)
-            .new_result()
-            .unwrap_or_default();
+    fn get_path(&self, path: &[Document]) -> Data {
+        let local = self.1.borrow().exec(self, path);
         let parent = self.0.get_path(path);
-        if local.is_unit() || local == Document::from("") {
+        if local.is_empty() {
             parent
+        } else if (local.is_empty() && parent.is_empty()) || local.is_failed() || parent.is_failed()
+        {
+            local
         } else {
-            parent + local
+            Data::from(parent.result().unwrap_or_default() + local.result().unwrap_or_default())
         }
     }
 }

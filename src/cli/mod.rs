@@ -42,10 +42,13 @@ fn parse_file(path: &PathBuf) -> Result<Document> {
 fn build_context(options: &Options) -> Result<StandardContext> {
     let ctx = StandardContext::new(Document::Unit);
     for file in options.input.iter() {
-        ctx.merge(parse_file(file)?);
+        ctx.merge(parse_file(file)?)?;
     }
     for setter in options.set.iter() {
-        ctx.set_path(&[setter.0.clone().into()], setter.1.to_string().into());
+        ctx.set_path(
+            &[setter.0.clone().into()],
+            Document::from(setter.1.to_string()).into(),
+        )?;
     }
     Ok(ctx)
 }

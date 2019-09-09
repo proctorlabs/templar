@@ -34,6 +34,11 @@ impl Data {
         self.error.is_some()
     }
 
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.doc.is_none() && self.error.is_none()
+    }
+
     pub fn result(self) -> Result<Document> {
         match (self.error, self.doc) {
             (Some(e), _) => Err(e),
@@ -55,6 +60,29 @@ impl Data {
             (Some(e), _) => Err(e.clone()),
             (_, Some(doc)) => Ok(doc),
             _ => Ok(&EMPTY_DOC),
+        }
+    }
+
+    pub fn from_result(result: Result<Document>) -> Data {
+        match result {
+            Ok(result) => Data {
+                doc: Some(result),
+                error: None,
+            },
+            Err(e) => Data {
+                doc: None,
+                error: Some(e),
+            },
+        }
+    }
+
+    pub fn check<T: std::fmt::Debug>(to_check: Result<T>) -> Data {
+        match to_check {
+            Err(e) => Data {
+                doc: None,
+                error: Some(e),
+            },
+            _ => Data::empty(),
         }
     }
 

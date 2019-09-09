@@ -50,7 +50,8 @@ impl Node {
                 }
             }
             Self::Value(a) => {
-                Data::from(ctx.get_path(&a.iter().map(|a| a.into()).collect::<Vec<Document>>()))
+                let docs = a.iter().map(|a| a.into()).collect::<Vec<Document>>();
+                ctx.get_path(&docs)
             }
             Self::Operation(op) => op.exec(ctx),
             Self::Filter(b) => {

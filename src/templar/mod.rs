@@ -1,8 +1,10 @@
 use crate::*;
 
 mod builder;
+mod template;
 
 pub use builder::TemplarBuilder;
+pub use template::{Template, TemplateTree};
 
 lazy_static! {
     static ref GLOBAL: Templar = { Templar::default() };

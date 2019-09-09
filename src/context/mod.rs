@@ -1,3 +1,4 @@
+use crate::*;
 use std::fmt::Debug;
 
 mod dynamic;
@@ -15,22 +16,23 @@ mod shared;
 pub use shared::SharedContext;
 
 pub trait Context: Debug {
-    fn merge(&self, doc: Document) {
-        let orig = self.get();
-        self.set(orig + doc);
+    fn merge(&self, doc: Document) -> Result<()> {
+        let orig = self.get().result()?;
+        self.set(orig + doc)?;
+        Ok(())
     }
 
     #[inline]
-    fn set(&self, doc: Document) {
-        self.set_path(&[], doc);
+    fn set(&self, doc: Document) -> Result<()> {
+        self.set_path(&[], doc.into())
     }
 
-    fn set_path(&self, path: &[Document], doc: Document);
+    fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()>;
 
     #[inline]
-    fn get(&self) -> Document {
+    fn get(&self) -> Data {
         self.get_path(&[])
     }
 
-    fn get_path(&self, path: &[Document]) -> Document;
+    fn get_path(&self, path: &[Document]) -> Data;
 }

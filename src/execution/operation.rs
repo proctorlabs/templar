@@ -149,7 +149,10 @@ fn for_loop(ctx: &dyn Context, val_name: &Node, array_path: &Node, exec: &Node) 
             let mut result = String::new();
             let ref_vec: Vec<Document> = set_path.iter().map(|p| p.into()).collect();
             for item in items.drain(0..) {
-                ctx.set_path(&ref_vec, item);
+                let r = ctx.set_path(&ref_vec, item.into());
+                if r.is_err() {
+                    return Data::check(r);
+                }
                 let res = exec.exec(ctx).result();
                 if let Err(e) = res {
                     return e.into();
@@ -165,7 +168,10 @@ fn for_loop(ctx: &dyn Context, val_name: &Node, array_path: &Node, exec: &Node) 
                 let mut entry = BTreeMap::new();
                 entry.insert("key".into(), k.clone()); //cloning the keys is better than rebalancing the tree
                 entry.insert("value".into(), v.take());
-                ctx.set_path(&ref_vec, entry.into());
+                let r = ctx.set_path(&ref_vec, Document::from(entry).into());
+                if r.is_err() {
+                    return Data::check(r);
+                }
                 let res = exec.exec(ctx).result();
                 if let Err(e) = res {
                     return e.into();
@@ -176,7 +182,10 @@ fn for_loop(ctx: &dyn Context, val_name: &Node, array_path: &Node, exec: &Node) 
         }
         (Node::Value(ref set_path), _) => {
             let ref_vec: Vec<Document> = set_path.iter().map(|p| p.into()).collect();
-            ctx.set_path(&ref_vec, array);
+            let r = ctx.set_path(&ref_vec, array.into());
+            if r.is_err() {
+                return Data::check(r);
+            }
             exec.exec(ctx)
         }
         _ => Data::from(TemplarError::RenderFailure(
@@ -191,8 +200,7 @@ fn set(ctx: &dyn Context, left: &Node, right: &Node) -> Data {
         (_, Err(e)) => e.into(),
         (Node::Value(path), Ok(ref mut val)) => {
             let ref_vec: Vec<Document> = path.iter().map(|p| p.into()).collect();
-            ctx.set_path(&ref_vec, val.take());
-            Data::empty()
+            Data::check(ctx.set_path(&ref_vec, val.take().into()))
         }
         (eval, Ok(ref mut val)) => {
             let path = eval.exec(ctx).result();
@@ -200,8 +208,7 @@ fn set(ctx: &dyn Context, left: &Node, right: &Node) -> Data {
                 return e.into();
             }
             let value = path.unwrap();
-            ctx.set_path(&[value], val.take());
-            Data::empty()
+            Data::check(ctx.set_path(&[value], val.take().into()))
         }
     }
 }

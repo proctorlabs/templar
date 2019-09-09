@@ -28,7 +28,6 @@ pub use {
         execution::Data,
         extensions::{Filter, Function, GenericFilter, GenericFunction, TemplarResult},
         templar::*,
-        template::{Template, TemplateTree},
     },
     unstructured::Document,
 };
@@ -43,4 +42,3 @@ mod execution;
 mod extensions;
 mod parser;
 mod templar;
-mod template;
