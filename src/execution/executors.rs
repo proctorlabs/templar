@@ -12,11 +12,11 @@ pub(crate) enum Executors {
     Loop(LoopExecutor),
 }
 
-pub(crate) struct IndeterminateExecutor(fn(&dyn Context, input: &[Node]) -> Data);
+pub(crate) struct IndeterminateExecutor(fn(&Context, input: &[Node]) -> Data);
 
 impl IndeterminateExecutor {
     #[inline]
-    pub fn new(new_fn: fn(&dyn Context, input: &[Node]) -> Data) -> Self {
+    pub fn new(new_fn: fn(&Context, input: &[Node]) -> Data) -> Self {
         Self(new_fn)
     }
 
@@ -30,13 +30,13 @@ impl IndeterminateExecutor {
 }
 
 pub(crate) struct ConditionalExecutor(
-    fn(&dyn Context, condition: &Node, positive: &Node, negative: &Node) -> Data,
+    fn(&Context, condition: &Node, positive: &Node, negative: &Node) -> Data,
 );
 
 impl ConditionalExecutor {
     #[inline]
     pub fn new(
-        new_fn: fn(&dyn Context, condition: &Node, positive: &Node, negative: &Node) -> Data,
+        new_fn: fn(&Context, condition: &Node, positive: &Node, negative: &Node) -> Data,
     ) -> Self {
         Self(new_fn)
     }
@@ -49,11 +49,11 @@ impl ConditionalExecutor {
         }
     }
 }
-pub(crate) struct PipedExecutor(fn(&dyn Context, left: &Node, right: &Node) -> Data);
+pub(crate) struct PipedExecutor(fn(&Context, left: &Node, right: &Node) -> Data);
 
 impl PipedExecutor {
     #[inline]
-    pub fn new(new_fn: fn(&dyn Context, left: &Node, right: &Node) -> Data) -> Self {
+    pub fn new(new_fn: fn(&Context, left: &Node, right: &Node) -> Data) -> Self {
         Self(new_fn)
     }
 
@@ -66,14 +66,12 @@ impl PipedExecutor {
     }
 }
 
-pub(crate) struct LoopExecutor(
-    fn(&dyn Context, ctx_name: &Node, arr: &Node, to_loop: &Node) -> Data,
-);
+pub(crate) struct LoopExecutor(fn(&Context, ctx_name: &Node, arr: &Node, to_loop: &Node) -> Data);
 
 impl LoopExecutor {
     #[inline]
     pub fn new(
-        new_fn: fn(&dyn Context, val_name: &Node, val_array: &Node, exec: &Node) -> Data,
+        new_fn: fn(&Context, val_name: &Node, val_array: &Node, exec: &Node) -> Data,
     ) -> Self {
         Self(new_fn)
     }
@@ -88,7 +86,7 @@ impl LoopExecutor {
 }
 
 pub(crate) trait Executor {
-    fn exec(&self, ctx: &dyn Context, nodes: &[Node]) -> Data;
+    fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data;
 }
 
 impl From<PipedExecutor> for Executors {
@@ -121,7 +119,7 @@ impl From<LoopExecutor> for Executors {
 
 impl Executor for Executors {
     #[inline]
-    fn exec(&self, ctx: &dyn Context, nodes: &[Node]) -> Data {
+    fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data {
         match self {
             Self::Piped(ref ex) => ex.exec(ctx, nodes),
             Self::Conditional(ref ex) => ex.exec(ctx, nodes),
@@ -133,28 +131,28 @@ impl Executor for Executors {
 
 impl Executor for IndeterminateExecutor {
     #[inline]
-    fn exec(&self, ctx: &dyn Context, nodes: &[Node]) -> Data {
+    fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data {
         self.0(ctx, &nodes)
     }
 }
 
 impl Executor for PipedExecutor {
     #[inline]
-    fn exec(&self, ctx: &dyn Context, nodes: &[Node]) -> Data {
+    fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data {
         self.0(ctx, &nodes[0], &nodes[1])
     }
 }
 
 impl Executor for ConditionalExecutor {
     #[inline]
-    fn exec(&self, ctx: &dyn Context, nodes: &[Node]) -> Data {
+    fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data {
         self.0(ctx, &nodes[0], &nodes[1], &nodes[2])
     }
 }
 
 impl Executor for LoopExecutor {
     #[inline]
-    fn exec(&self, ctx: &dyn Context, nodes: &[Node]) -> Data {
+    fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data {
         self.0(ctx, &nodes[0], &nodes[1], &nodes[2])
     }
 }

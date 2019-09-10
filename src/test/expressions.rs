@@ -5,7 +5,7 @@ macro_rules! test_expressions {
         #[test]
         fn $name() -> Result<()> {
             let tmpl = Templar::global().parse_expression($exp)?;
-            let context = StandardContext::new(Document::Unit);
+            let context = Context::new_standard(Document::Unit);
             let result = tmpl.exec(&context);
             assert!(result.is_err());
             Ok(())
@@ -18,7 +18,7 @@ macro_rules! test_expressions {
         #[test]
         fn $name() -> Result<()> {
             let tmpl = Templar::global().parse_expression($exp)?;
-            let context = StandardContext::new(Document::Unit);
+            let context = Context::new_standard(Document::Unit);
             let result = tmpl.exec(&context)?;
             let cmp: Document = ($res).into();
             assert_eq!(result, cmp, "{} expression '{}' result -> {:?}", stringify!($name), $exp, result);
@@ -32,7 +32,7 @@ macro_rules! test_expressions {
         #[test]
         fn $name() -> Result<()> {
             let tmpl = Templar::global().parse_expression($exp)?;
-            let context = StandardContext::new(Document::Unit);
+            let context = Context::new_standard(Document::Unit);
             let result = tmpl.exec(&context)?;
             let cmp: Document = ($res).into();
             assert_ne!(result, cmp, "{} expression '{}' result -> {:?}", stringify!($name), $exp, result);

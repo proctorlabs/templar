@@ -17,14 +17,11 @@ extern crate lazy_static;
 pub(crate) use error::*;
 use std::{collections::HashMap, sync::Arc};
 
-#[cfg(feature = "shared-context")]
-pub use context::SharedContext;
-
 pub(crate) use execution::*;
 
 pub use {
     self::{
-        context::{Context, StandardContext},
+        context::Context,
         execution::Data,
         extensions::{Filter, Function, GenericFilter, GenericFunction, TemplarResult},
         templar::*,

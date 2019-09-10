@@ -1,4 +1,3 @@
-use crate::context::ScopedContext;
 use crate::*;
 pub use data::*;
 use executors::*;

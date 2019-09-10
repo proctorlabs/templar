@@ -17,7 +17,7 @@ impl fmt::Debug for Operation {
 }
 
 impl Operation {
-    pub(crate) fn exec(&self, ctx: &dyn Context) -> Data {
+    pub(crate) fn exec(&self, ctx: &Context) -> Data {
         Executor::exec(&self.oper, ctx, &self.nodes)
     }
 }
@@ -73,7 +73,7 @@ map_operations! {
 macro_rules! simple_pipe {
     ( $( $pipe_name:ident ( $l:ident , $r:ident ) -> { $( $tail:tt )* } ; )* ) => {
         $(
-            fn $pipe_name(ctx: &dyn Context, left: &Node, right: &Node) -> Data {
+            fn $pipe_name(ctx: & Context, left: &Node, right: &Node) -> Data {
                 match (left.exec(ctx).result(), right.exec(ctx).result()) {
                     (Ok($l), Ok($r)) => Data::from( $( $tail )* ),
                     (Err(e), _) | (_, Err(e)) => Data::from(e),
@@ -111,7 +111,7 @@ simple_pipe! {
     less_than_equals(l, r) -> { l <= r };
 }
 
-fn if_then(ctx: &dyn Context, cnd: &Node, p: &Node, n: &Node) -> Data {
+fn if_then(ctx: &Context, cnd: &Node, p: &Node, n: &Node) -> Data {
     let cnd = cnd.exec(ctx).result();
     match cnd {
         Ok(Document::Bool(true)) => p.exec(ctx),
@@ -121,7 +121,7 @@ fn if_then(ctx: &dyn Context, cnd: &Node, p: &Node, n: &Node) -> Data {
     }
 }
 
-fn concat(ctx: &dyn Context, input: &[Node]) -> Data {
+fn concat(ctx: &Context, input: &[Node]) -> Data {
     let results: Result<Vec<String>> = input.iter().map(|node| Ok(node.render(ctx)?)).collect();
     match results {
         Ok(result) => result
@@ -135,7 +135,7 @@ fn concat(ctx: &dyn Context, input: &[Node]) -> Data {
     }
 }
 
-fn for_loop(ctx: &dyn Context, val_name: &Node, array_path: &Node, exec: &Node) -> Data {
+fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> Data {
     // Get the result for the value we're iterating over
     let array_exec = array_path.exec(ctx).result();
     if let Err(e) = array_exec {
@@ -194,7 +194,7 @@ fn for_loop(ctx: &dyn Context, val_name: &Node, array_path: &Node, exec: &Node) 
     }
 }
 
-fn set(ctx: &dyn Context, left: &Node, right: &Node) -> Data {
+fn set(ctx: &Context, left: &Node, right: &Node) -> Data {
     let val = right.exec(ctx).result();
     match (left, val) {
         (_, Err(e)) => e.into(),

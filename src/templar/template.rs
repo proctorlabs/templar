@@ -1,4 +1,3 @@
-use crate::context::ScopedContext;
 use crate::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -7,12 +6,12 @@ use std::sync::Arc;
 pub struct Template(Arc<Node>);
 
 impl Template {
-    pub fn render(&self, ctx: &dyn Context) -> Result<String> {
-        let local_ctx = ScopedContext::new(ctx);
+    pub fn render(&self, ctx: &Context) -> Result<String> {
+        let local_ctx = ctx.create_scope();
         self.0.render(&local_ctx)
     }
 
-    pub fn exec(&self, ctx: &dyn Context) -> Result<Document> {
+    pub fn exec(&self, ctx: &Context) -> Result<Document> {
         self.0.exec(ctx).result()
     }
 

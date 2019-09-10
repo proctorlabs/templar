@@ -29,7 +29,7 @@ impl Templar {
 
     #[inline]
     pub fn parse_tree(&self, doc: &Document) -> Result<TemplateTree> {
-        let default_context = StandardContext::new(Document::Unit);
+        let default_context = Context::new_standard(Document::Unit);
         Ok(match doc {
             Document::Newtype(d) => self.parse_tree(d)?,
             Document::Seq(s) => TemplateTree::Sequence(Arc::new(

@@ -39,8 +39,8 @@ fn parse_file(path: &PathBuf) -> Result<Document> {
     })
 }
 
-fn build_context(options: &Options) -> Result<StandardContext> {
-    let ctx = StandardContext::new(Document::Unit);
+fn build_context(options: &Options) -> Result<Context> {
+    let ctx = Context::new_standard(Document::Unit);
     for file in options.input.iter() {
         ctx.merge(parse_file(file)?)?;
     }

@@ -5,34 +5,78 @@ mod dynamic;
 pub use dynamic::*;
 
 mod scoped;
-pub(crate) use scoped::ScopedContext;
-
 mod standard;
-pub use standard::StandardContext;
+
+use {scoped::ScopedContext, standard::StandardContext};
 
 #[cfg(feature = "shared-context")]
 mod shared;
 #[cfg(feature = "shared-context")]
-pub use shared::SharedContext;
+use shared::SharedContext;
 
-pub trait Context: Debug {
-    fn merge(&self, doc: Document) -> Result<()> {
+pub trait ContextDispatcher: Debug {
+    fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()>;
+    fn get_path(&self, path: &[Document], ctx: &Context) -> Data;
+}
+
+#[derive(Debug)]
+pub struct Context<'a> {
+    dispatcher: Box<dyn ContextDispatcher + 'a>,
+}
+
+impl<'a> Context<'a> {
+    pub fn create_scope(&'a self) -> Context<'a> {
+        Context {
+            dispatcher: Box::new(ScopedContext::new(&self.dispatcher)),
+        }
+    }
+}
+
+impl Context<'_> {
+    pub fn new_standard<T: Into<ContextMapValue>>(initial_value: T) -> Self {
+        Context {
+            dispatcher: Box::new(StandardContext::new(initial_value)),
+        }
+    }
+
+    #[cfg(feature = "shared-context")]
+    pub fn new_shared<T: Into<ContextMapValue>>(initial_value: T) -> Self {
+        Context {
+            dispatcher: Box::new(SharedContext::new(initial_value)),
+        }
+    }
+
+    #[inline]
+    pub fn merge(&self, doc: Document) -> Result<()> {
         let orig = self.get().result()?;
         self.set(orig + doc)?;
         Ok(())
     }
 
     #[inline]
-    fn set(&self, doc: Document) -> Result<()> {
-        self.set_path(&[], doc.into())
+    pub fn merge_path(&self, path: &[Document], doc: Document) -> Result<()> {
+        let orig = self.get_path(path).result()?;
+        self.set_path(path, (orig + doc).into())?;
+        Ok(())
     }
-
-    fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()>;
 
     #[inline]
-    fn get(&self) -> Data {
-        self.get_path(&[])
+    pub fn set(&self, doc: Document) -> Result<()> {
+        self.dispatcher.set_path(&[], doc.into())
     }
 
-    fn get_path(&self, path: &[Document]) -> Data;
+    #[inline]
+    pub fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()> {
+        self.dispatcher.set_path(path, doc)
+    }
+
+    #[inline]
+    pub fn get(&self) -> Data {
+        self.dispatcher.get_path(&[], &self)
+    }
+
+    #[inline]
+    pub fn get_path(&self, path: &[Document]) -> Data {
+        self.dispatcher.get_path(path, &self)
+    }
 }

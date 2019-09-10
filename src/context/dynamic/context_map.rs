@@ -1,8 +1,4 @@
 use super::*;
-use crate::execution::{Data, Node};
-use std::collections::BTreeMap;
-use std::mem::replace;
-pub use unstructured::Document;
 
 #[derive(Clone, Debug, Default)]
 pub struct ContextMap {
@@ -34,29 +30,91 @@ impl ContextMap {
             .root
             .entry(path[0].clone())
             .or_insert_with(ContextMapValue::new_map);
-        for p in path.iter().skip(1).take(path.len() - 2) {
+        for p in path.iter().skip(1).take(path.len() - 1) {
             target = target.get_or_add_key(p.clone());
         }
         target.set(value.into());
         Ok(())
     }
 
-    pub fn exec(&self, ctx: &dyn Context, path: &[Document]) -> Data {
+    pub fn exec(&self, ctx: &Context, path: &[Document]) -> Data {
         if path.is_empty() {
             let copy = ContextMapValue::Map(self.root.clone());
             return copy.exec(ctx);
         }
-        let mut target: Option<&ContextMapValue> = self.root.get(&path[0]);
+        let walker = ContextWalk::from(self.root.get(&path[0]));
         for p in path.iter().skip(1) {
-            match target {
-                None => target = self.root.get(p),
-                Some(t) => target = t.get(p),
+            walker.walk(ctx, p);
+        }
+        walker.exec(ctx)
+    }
+}
+
+impl From<TemplateTree> for ContextMapValue {
+    fn from(val: TemplateTree) -> Self {
+        match val {
+            TemplateTree::Template(t) => t.into(),
+            TemplateTree::Sequence(s) => {
+                let result: Vec<ContextMapValue> = s.iter().map(|t| t.clone().into()).collect();
+                ContextMapValue::Seq(result)
+            }
+            TemplateTree::Mapping(m) => {
+                let result: BTreeMap<Document, ContextMapValue> = m
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone().into()))
+                    .collect();
+                ContextMapValue::Map(result)
             }
         }
-        if let Some(t) = target {
-            t.exec(ctx)
-        } else {
-            Data::empty()
+    }
+}
+
+impl ContextMapValue {
+    #[inline]
+    fn new_map() -> Self {
+        ContextMapValue::Map(BTreeMap::new())
+    }
+
+    fn set<T: Into<ContextMapValue>>(&mut self, val: T) {
+        replace(self, val.into());
+    }
+
+    fn get_or_add_key(&mut self, key: Document) -> &mut ContextMapValue {
+        match self {
+            ContextMapValue::Map(ref mut map) => {
+                map.entry(key).or_insert_with(ContextMapValue::new_map)
+            }
+            _ => {
+                let new_val = ContextMapValue::new_map();
+                replace(self, new_val);
+                self.get_or_add_key(key)
+            }
+        }
+    }
+
+    pub fn exec(&self, ctx: &Context) -> Data {
+        match self {
+            ContextMapValue::Static(ref data) => data.clone(),
+            ContextMapValue::Dynamic(node) => node.exec(ctx),
+            ContextMapValue::Map(map) => {
+                let mut result: BTreeMap<Document, Document> = BTreeMap::new();
+                for (k, v) in map.iter() {
+                    match v.exec(ctx).result() {
+                        Ok(d) => result.insert(k.clone(), d),
+                        Err(e) => return e.into(),
+                    };
+                }
+                result.into()
+            }
+            ContextMapValue::Seq(s) => {
+                let result: Result<Vec<Document>> =
+                    s.iter().map(|v| v.exec(ctx).result()).collect();
+                match result {
+                    Ok(s) => s.into(),
+                    Err(e) => e.into(),
+                }
+            }
+            _ => Data::empty(),
         }
     }
 }
@@ -108,79 +166,8 @@ impl From<Template> for ContextMapValue {
     }
 }
 
-impl From<TemplateTree> for ContextMapValue {
-    fn from(val: TemplateTree) -> Self {
-        match val {
-            TemplateTree::Template(t) => t.into(),
-            TemplateTree::Sequence(s) => {
-                let result: Vec<ContextMapValue> = s.iter().map(|t| t.clone().into()).collect();
-                ContextMapValue::Seq(result)
-            }
-            TemplateTree::Mapping(m) => {
-                let result: BTreeMap<Document, ContextMapValue> = m
-                    .iter()
-                    .map(|(k, v)| (k.clone(), v.clone().into()))
-                    .collect();
-                ContextMapValue::Map(result)
-            }
-        }
-    }
-}
-
-impl ContextMapValue {
-    #[inline]
-    fn new_map() -> Self {
-        ContextMapValue::Map(BTreeMap::new())
-    }
-
-    fn set<T: Into<ContextMapValue>>(&mut self, val: T) {
-        replace(self, val.into());
-    }
-
-    fn get_or_add_key(&mut self, key: Document) -> &mut ContextMapValue {
-        match self {
-            ContextMapValue::Map(ref mut map) => {
-                map.entry(key).or_insert_with(ContextMapValue::new_map)
-            }
-            _ => {
-                let new_val = ContextMapValue::new_map();
-                replace(self, new_val);
-                self.get_or_add_key(key)
-            }
-        }
-    }
-
-    fn exec(&self, ctx: &dyn Context) -> Data {
-        match self {
-            ContextMapValue::Static(ref data) => data.clone(),
-            ContextMapValue::Dynamic(node) => node.exec(ctx),
-            ContextMapValue::Map(map) => {
-                let mut result: BTreeMap<Document, Document> = BTreeMap::new();
-                for (k, v) in map.iter() {
-                    match v.exec(ctx).result() {
-                        Ok(d) => result.insert(k.clone(), d),
-                        Err(e) => return e.into(),
-                    };
-                }
-                result.into()
-            }
-            ContextMapValue::Seq(s) => {
-                let result: Result<Vec<Document>> =
-                    s.iter().map(|v| v.exec(ctx).result()).collect();
-                match result {
-                    Ok(s) => s.into(),
-                    Err(e) => e.into(),
-                }
-            }
-            _ => Data::empty(),
-        }
-    }
-
-    #[inline]
-    fn get<'a>(&'a self, key: &Document) -> Option<&'a ContextMapValue> {
-        match self {
-            Self::Map(map) => map.get(&key),
-            _ => None,
-        }
+impl From<Data> for ContextMapValue {
+    fn from(val: Data) -> Self {
+        ContextMapValue::Static(val)
     }
 }

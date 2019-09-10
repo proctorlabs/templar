@@ -36,7 +36,7 @@ impl Default for Node {
 }
 
 impl Node {
-    pub(crate) fn exec(&self, ctx: &dyn Context) -> Data {
+    pub(crate) fn exec(&self, ctx: &Context) -> Data {
         match self {
             Self::Data(d) => d.clone(),
             Self::Expr(a) => {
@@ -64,7 +64,7 @@ impl Node {
                 }
             }
             Self::Scope(i) => {
-                let local_context = ScopedContext::new(ctx);
+                let local_context = ctx.create_scope();
                 i.exec(&local_context)
             }
             Self::Array(s) => Data::from_vec(s.iter().map(|n| n.exec(ctx)).collect()),
@@ -109,7 +109,7 @@ impl Node {
         }
     }
 
-    pub fn render(&self, ctx: &dyn Context) -> Result<String> {
+    pub fn render(&self, ctx: &Context) -> Result<String> {
         self.exec(ctx).render()
     }
 }
