@@ -24,9 +24,22 @@ macro_rules! parse_token {
     (false => $tree:expr) => {
         $tree.push(Node::Data(false.into()))?;
     };
-    (str ' ' : $rule:expr => $tree:expr) => {
-        $tree.push(Node::Data($rule.into_inner().as_str().replace("\\'", "'").into()))?;
-    };
+    (str ' ' : $rule:expr => $tree:expr) => {{
+        $tree.push({
+            let mut result = String::new();
+            for pair in $rule.clone().into_inner() {
+                match pair.as_rule() {
+                    Rule::str_single => result.push_str(&$rule.as_str().replace("\\'", "'")),
+                    Rule::str_double => result.push_str(&$rule.as_str().replace("\\\"", "\"")),
+                    Rule::str_backtick => result.push_str(&$rule.as_str().replace("\\`", "`")),
+                    _ => parse_token!(!pair),
+                }
+            }
+            result.truncate(result.len() - 1);
+            result.remove(0);
+            Node::Data(result.into())
+        })?;
+    }};
     (nil => $tree:expr) => {
         $tree.push(Node::Data(Document::Unit.into()))?;
     };

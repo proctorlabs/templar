@@ -42,8 +42,10 @@ Key: {{ item.key }} -> Value: {{ item.value }}
 --- If/Else Example
 {%- if env('USER') | lower == 'root' %}
 {{ 'don\'t run as root!!' | upper }}
-{% else if env('USER') == 'phil' %}
+{%- else if env('USER') == 'phil' %}
 Hi phil!
-{% else %}
+{%- else %}
 Good, you aren't running as root
-{% end if -%}
+{%- end if %}
+
+{{ `hello` }}

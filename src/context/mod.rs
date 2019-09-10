@@ -25,7 +25,7 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn create_scope(&'a self) -> Context<'a> {
+    pub(crate) fn create_scope(&'a self) -> Context<'a> {
         Context {
             dispatcher: Box::new(ScopedContext::new(&self.dispatcher)),
         }

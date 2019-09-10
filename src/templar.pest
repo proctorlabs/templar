@@ -52,8 +52,10 @@ false_lit   = @{ "false" | "no" }
 null_lit    = @{ "null" | "nil" }
 number_lit  = @{ "-"? ~ ASCII_DIGIT+ }
 
-string_lit  = ${ "'" ~ str_single ~ "'" }
-str_single  = @{ (!"'" ~ ("\\'" | ANY))* }
+string_lit   = ${ ("'" ~ str_single ~ "'") | ("\"" ~ str_double ~ "\"") | ("`" ~ str_backtick ~ "`") }
+str_single   = @{ (!"'" ~ ("\\'" | ANY))* }
+str_double   = @{ (!"\"" ~ ("\\\"" | ANY))* }
+str_backtick = @{ (!"`" ~ ("\\`" | ANY))* }
 
 array_lit   = @{ "[" ~ ws ~ expression_vararg ~ ws ~ "]"}
 

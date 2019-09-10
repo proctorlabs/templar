@@ -46,6 +46,9 @@ base64 = { version = "0.10", optional = true }
 clap = { version = "2.33", optional = true }
 structopt = { version = "0.3", optional = true }
 
+[dev-dependencies]
+criterion = "0.3"
+
 [features]
 default = ["yaml-extension", "base64-extension"]
 
@@ -76,6 +79,11 @@ path = "src/lib.rs"
 name = "templar"
 path = "src/main.rs"
 required-features = ["bin"]
+
+[[bench]]
+name = "templar_benchmark"
+harness = false
+path = "benches/lib.rs"
 
 [profile.release]
 opt-level = 3
