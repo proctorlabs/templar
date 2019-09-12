@@ -71,6 +71,8 @@ full = ["serde-extensions", "base64-extension", "shared-context"]
 #binary
 bin = ["clap", "structopt", "common-extensions"]
 
+experimental = []
+
 [lib]
 name = "templar"
 path = "src/lib.rs"

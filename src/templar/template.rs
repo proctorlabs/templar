@@ -1,4 +1,5 @@
 use crate::*;
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
@@ -23,7 +24,7 @@ impl Template {
 #[derive(Debug, Clone)]
 pub enum TemplateTree {
     Template(Template),
-    Mapping(Arc<HashMap<Document, TemplateTree>>),
+    Mapping(Arc<BTreeMap<Document, TemplateTree>>),
     Sequence(Arc<Vec<TemplateTree>>),
 }
 

@@ -147,9 +147,9 @@ fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> D
     match (val_name, &mut array) {
         (Node::Value(set_path), Document::Seq(items)) => {
             let mut result = String::new();
-            let ref_vec: Vec<Document> = set_path.iter().map(|p| p.into()).collect();
+            let ref_vec: Vec<&Document> = set_path.iter().collect();
             for item in items.drain(0..) {
-                let r = ctx.set_path(&ref_vec, item.into());
+                let r = ctx.set_path(&ref_vec, item);
                 if r.is_err() {
                     return Data::check(r);
                 }
@@ -163,12 +163,12 @@ fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> D
         }
         (Node::Value(set_path), Document::Map(items)) => {
             let mut result = String::new();
-            let ref_vec: Vec<Document> = set_path.iter().map(|p| p.into()).collect();
+            let ref_vec: Vec<&Document> = set_path.iter().collect();
             for (k, v) in items.iter_mut() {
                 let mut entry = BTreeMap::new();
                 entry.insert("key".into(), k.clone()); //cloning the keys is better than rebalancing the tree
                 entry.insert("value".into(), v.take());
-                let r = ctx.set_path(&ref_vec, Document::from(entry).into());
+                let r = ctx.set_path(&ref_vec, Document::from(entry));
                 if r.is_err() {
                     return Data::check(r);
                 }
@@ -181,8 +181,8 @@ fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> D
             result.into()
         }
         (Node::Value(ref set_path), _) => {
-            let ref_vec: Vec<Document> = set_path.iter().map(|p| p.into()).collect();
-            let r = ctx.set_path(&ref_vec, array.into());
+            let ref_vec: Vec<&Document> = set_path.iter().collect();
+            let r = ctx.set_path(&ref_vec, array);
             if r.is_err() {
                 return Data::check(r);
             }
@@ -199,8 +199,8 @@ fn set(ctx: &Context, left: &Node, right: &Node) -> Data {
     match (left, val) {
         (_, Err(e)) => e.into(),
         (Node::Value(path), Ok(ref mut val)) => {
-            let ref_vec: Vec<Document> = path.iter().map(|p| p.into()).collect();
-            Data::check(ctx.set_path(&ref_vec, val.take().into()))
+            let ref_vec: Vec<&Document> = path.iter().collect();
+            Data::check(ctx.set_path(&ref_vec, val.take()))
         }
         (eval, Ok(ref mut val)) => {
             let path = eval.exec(ctx).result();
@@ -208,7 +208,7 @@ fn set(ctx: &Context, left: &Node, right: &Node) -> Data {
                 return e.into();
             }
             let value = path.unwrap();
-            Data::check(ctx.set_path(&[value], val.take().into()))
+            Data::check(ctx.set_path(&[&value], val.take()))
         }
     }
 }

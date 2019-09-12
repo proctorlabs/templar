@@ -5,7 +5,7 @@ pub enum Node {
     Expr(Vec<Node>),
     Data(Data),
     Scope(Box<Node>),
-    Value(Vec<String>),
+    Value(Vec<Document>),
     Operation(Arc<Operation>),
     Filter(Box<(Node, Arc<Filter>, Node)>),
     Function(Box<(Arc<Function>, Node)>),
@@ -50,7 +50,7 @@ impl Node {
                 }
             }
             Self::Value(a) => {
-                let docs = a.iter().map(|a| a.into()).collect::<Vec<Document>>();
+                let docs = a.iter().collect::<Vec<&Document>>();
                 ctx.get_path(&docs)
             }
             Self::Operation(op) => op.exec(ctx),

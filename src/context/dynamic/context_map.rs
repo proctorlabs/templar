@@ -12,7 +12,7 @@ impl ContextMap {
         result
     }
 
-    pub fn set<T: Into<ContextMapValue>>(&mut self, value: T, path: &[Document]) -> Result<()> {
+    pub fn set<T: Into<ContextMapValue>>(&mut self, value: T, path: &[&Document]) -> Result<()> {
         if path.is_empty() {
             let val: ContextMapValue = value.into();
             if let ContextMapValue::Map(map) = val {
@@ -31,13 +31,13 @@ impl ContextMap {
             .entry(path[0].clone())
             .or_insert_with(ContextMapValue::new_map);
         for p in path.iter().skip(1).take(path.len() - 1) {
-            target = target.get_or_add_key(p.clone());
+            target = target.get_or_add_key(*p);
         }
         target.set(value.into());
         Ok(())
     }
 
-    pub fn exec(&self, ctx: &Context, path: &[Document]) -> Data {
+    pub fn exec(&self, ctx: &Context, path: &[&Document]) -> Data {
         if path.is_empty() {
             let copy = ContextMapValue::Map(self.root.clone());
             return copy.exec(ctx);
@@ -79,11 +79,11 @@ impl ContextMapValue {
         replace(self, val.into());
     }
 
-    fn get_or_add_key(&mut self, key: Document) -> &mut ContextMapValue {
+    fn get_or_add_key(&mut self, key: &Document) -> &mut ContextMapValue {
         match self {
-            ContextMapValue::Map(ref mut map) => {
-                map.entry(key).or_insert_with(ContextMapValue::new_map)
-            }
+            ContextMapValue::Map(ref mut map) => map
+                .entry(key.clone())
+                .or_insert_with(ContextMapValue::new_map),
             _ => {
                 let new_val = ContextMapValue::new_map();
                 replace(self, new_val);
@@ -134,9 +134,9 @@ impl Default for ContextMapValue {
     }
 }
 
-impl From<Document> for ContextMapValue {
-    fn from(val: Document) -> Self {
-        match val {
+impl<T: Into<Document>> From<T> for ContextMapValue {
+    fn from(val: T) -> Self {
+        match val.into() {
             Document::Map(m) => {
                 let mut new_val = BTreeMap::new();
                 for (k, v) in m.into_iter() {

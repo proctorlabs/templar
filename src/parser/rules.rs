@@ -121,11 +121,11 @@ macro_rules! parse_token {
     }};
     (value : $rule:expr => $tree:expr) => {
         $tree.push({
-            let mut result = vec![];
+            let mut result: Vec<Document> = vec![];
             for pair in $rule.into_inner() {
                 match pair.as_rule() {
                     Rule::ident => result.push(parse_token!(ident: pair)),
-                    Rule::value_key => result.push(parse_token!(value_key: pair)),
+                    Rule::value_key => result.push(parse_token!(value_key: pair).into()),
                     _ => parse_token!(!pair),
                 }
             }

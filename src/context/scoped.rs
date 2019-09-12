@@ -13,11 +13,11 @@ impl<'a> ScopedContext<'a> {
 }
 
 impl<'a> ContextDispatcher for ScopedContext<'a> {
-    fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()> {
+    fn set_path(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
         self.1.borrow_mut().set(doc, path)
     }
 
-    fn get_path(&self, path: &[Document], ctx: &Context) -> Data {
+    fn get_path(&self, path: &[&Document], ctx: &Context) -> Data {
         let local = self.1.borrow().exec(ctx, path);
         if local.is_empty() {
             self.0.get_path(path, ctx)

@@ -15,8 +15,8 @@ mod shared;
 use shared::SharedContext;
 
 pub trait ContextDispatcher: Debug {
-    fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()>;
-    fn get_path(&self, path: &[Document], ctx: &Context) -> Data;
+    fn set_path(&self, path: &[&Document], doc: ContextMapValue) -> Result<()>;
+    fn get_path(&self, path: &[&Document], ctx: &Context) -> Data;
 }
 
 #[derive(Debug)]
@@ -47,27 +47,30 @@ impl Context<'_> {
     }
 
     #[inline]
-    pub fn merge(&self, doc: Document) -> Result<()> {
+    pub fn merge<T: Into<Document>>(&self, doc: T) -> Result<()> {
         let orig = self.get().result()?;
-        self.set(orig + doc)?;
+        self.set(orig + doc.into())?;
         Ok(())
     }
 
     #[inline]
-    pub fn merge_path(&self, path: &[Document], doc: Document) -> Result<()> {
+    pub fn merge_path<T>(&self, path: &[&Document], doc: T) -> Result<()>
+    where
+        Document: From<T>,
+    {
         let orig = self.get_path(path).result()?;
-        self.set_path(path, (orig + doc).into())?;
+        self.set_path::<Document>(path, orig + Document::from(doc))?;
         Ok(())
     }
 
     #[inline]
-    pub fn set(&self, doc: Document) -> Result<()> {
+    pub fn set<T: Into<ContextMapValue>>(&self, doc: T) -> Result<()> {
         self.dispatcher.set_path(&[], doc.into())
     }
 
     #[inline]
-    pub fn set_path(&self, path: &[Document], doc: ContextMapValue) -> Result<()> {
-        self.dispatcher.set_path(path, doc)
+    pub fn set_path<T: Into<ContextMapValue>>(&self, path: &[&Document], doc: T) -> Result<()> {
+        self.dispatcher.set_path(path, doc.into())
     }
 
     #[inline]
@@ -76,7 +79,7 @@ impl Context<'_> {
     }
 
     #[inline]
-    pub fn get_path(&self, path: &[Document]) -> Data {
+    pub fn get_path(&self, path: &[&Document]) -> Data {
         self.dispatcher.get_path(path, &self)
     }
 }
