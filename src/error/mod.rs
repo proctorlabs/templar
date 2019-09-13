@@ -1,3 +1,7 @@
+/*!
+All of the error types returned by Templar.
+ */
+
 use std::error::Error;
 use std::fmt;
 use std::sync::Arc;
@@ -35,6 +39,7 @@ impl fmt::Display for TemplarError {
 
 impl Error for TemplarError {}
 
+/// Result type for all Templar methods
 pub type Result<T> = std::result::Result<T, TemplarError>;
 
 impl From<Box<dyn Error>> for TemplarError {
@@ -43,7 +48,9 @@ impl From<Box<dyn Error>> for TemplarError {
     }
 }
 
+/// Helper trait for wrapping other error types as a Templar error
 pub trait ResultMap<U> {
+    /// Wrap an external error as a Templar error
     fn wrap(self) -> Result<U>;
 }
 

@@ -11,6 +11,8 @@ password={{ shell('echo hunter2 | md5sum') }}
 ```
 */
 
+//#![warn(missing_docs)]
+
 #[macro_use]
 extern crate lazy_static;
 

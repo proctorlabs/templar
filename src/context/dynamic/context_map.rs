@@ -94,8 +94,7 @@ impl ContextMapValue {
 
     pub fn exec(&self, ctx: &Context) -> Data {
         match self {
-            ContextMapValue::Static(ref data) => data.clone(),
-            ContextMapValue::Dynamic(node) => node.exec(ctx),
+            ContextMapValue::Node(node) => node.exec(ctx),
             ContextMapValue::Map(map) => {
                 let mut result: BTreeMap<Document, Document> = BTreeMap::new();
                 for (k, v) in map.iter() {
@@ -123,8 +122,7 @@ impl ContextMapValue {
 pub enum ContextMapValue {
     Seq(Vec<ContextMapValue>),
     Map(BTreeMap<Document, ContextMapValue>),
-    Static(Data),
-    Dynamic(Arc<Node>),
+    Node(Arc<Node>),
     Empty,
 }
 
@@ -149,25 +147,25 @@ impl<T: Into<Document>> From<T> for ContextMapValue {
                 ContextMapValue::Seq(new_val)
             }
             Document::Newtype(mut d) => d.take().into(),
-            other => ContextMapValue::Static(other.into()),
+            other => ContextMapValue::Node(Arc::new(Data::from(other).into())),
         }
     }
 }
 
 impl From<Node> for ContextMapValue {
     fn from(val: Node) -> Self {
-        ContextMapValue::Dynamic(Arc::new(val))
+        ContextMapValue::Node(Arc::new(val))
     }
 }
 
 impl From<Template> for ContextMapValue {
     fn from(val: Template) -> Self {
-        ContextMapValue::Dynamic(val.root_node())
+        ContextMapValue::Node(val.root_node())
     }
 }
 
 impl From<Data> for ContextMapValue {
     fn from(val: Data) -> Self {
-        ContextMapValue::Static(val)
+        ContextMapValue::Node(Arc::new(val.into()))
     }
 }
