@@ -49,3 +49,42 @@ Good, you aren't running as root
 {%- end if %}
 
 {{ `hello` }}
+
+{#-
+The rendered output of this template:
+-----
+
+The kitchen sink.
+Basically just a bunch of random stuff thrown into a file to demonstrate templates.
+
+--- Comment example
+
+--- Value replacements
+This template was run with the user phil
+
+The value 'Somekey' from example.json is Somevalue
+The package name from Cargo.toml is 
+
+--- For loop examples
+Iterate over an array
+1
+2
+3
+
+Iterate over a dictionary
+Key: another -> Value: val
+Key: key -> Value: val
+
+--- Setting values
+test
+
+--- Scoping example
+NOT IN A SCOPE...
+I'm in a scope!
+NOT IN A SCOPE...
+
+--- If/Else Example
+Hi phil!
+
+hello
+#}
