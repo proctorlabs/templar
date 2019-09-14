@@ -119,7 +119,8 @@ mod test;
 
 mod context;
 mod execution;
-mod extensions;
+mod filters;
+mod functions;
 mod parser;
 mod templar;
 

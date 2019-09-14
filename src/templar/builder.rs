@@ -17,8 +17,8 @@ pub struct TemplarBuilder {
 impl Default for TemplarBuilder {
     fn default() -> TemplarBuilder {
         TemplarBuilder {
-            functions: extensions::default_functions(),
-            filters: extensions::default_filters(),
+            functions: functions::default_functions(),
+            filters: filters::default_filters(),
         }
     }
 }
