@@ -99,13 +99,12 @@ macro_rules! parse_token {
                     _ => parse_token!(!pair),
                 }
             }
-            Node::Function(Box::new((
-                tree.templar.functions
+            name.shrink_to_fit();
+            let executor = FunctionExecutor::new(tree.templar.functions
                     .get(&name)
-                    .ok_or_else(|| TemplarError::FunctionNotFound(name.into()))?
-                    .clone(),
-                tree.into_node()?,
-            )))
+                    .ok_or_else(|| TemplarError::FunctionNotFound(name.to_string()))?
+                    .clone());
+            Node::Operation(Arc::new(Operation::from_function(name, executor, tree.into_node()?)))
         })?;
     };
     (filter : $rule:expr => $tree:expr) => {{

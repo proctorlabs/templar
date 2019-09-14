@@ -68,16 +68,20 @@ impl<'a> ParseTree<'a> {
     pub fn filter(&mut self, filter: &str, args: Node) -> Result<()> {
         self.finish_op()?;
         let tree = replace(&mut self.tree, vec![]);
-        // let nodes = vec![tree.into(), args];
-        self.tree = vec![Node::Filter(Box::new((
-            tree.into(),
-            self.templar
-                .filters
-                .get(filter)
-                .ok_or_else(|| TemplarError::FilterNotFound(filter.into()))?
-                .clone(),
-            args,
-        )))];
+        let nodes = vec![tree.into(), args];
+        let filter_fn = self
+            .templar
+            .filters
+            .get(filter)
+            .ok_or_else(|| TemplarError::FilterNotFound(filter.into()))?
+            .clone();
+        let executor = FilterExecutor::new(filter_fn);
+        self.tree
+            .push(Node::Operation(Arc::new(Operation::from_filter(
+                filter.into(),
+                executor,
+                nodes,
+            ))));
         Ok(())
     }
 

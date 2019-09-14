@@ -74,7 +74,7 @@ Everything inside the standard `{{ }}` block is an expression. Each block holds 
 many individual operations. A quick overview:
 
 * Math operations: `+ - * / %` these operations are only valid with numeric types
-* Conditionals: `== != < <= > >= && ||`
+* Equality: `== != < <= > >= && ||`
 * Value setting: `=` the left side of this operation must be some identifier e.g. `{{ some.val.path = 'hello world!' }}`
 * String concatenation: `~` e.g. `{{ 'Hello' ~ ' ' ~ 'world!' }}` prints "Hello world!"
 * Functions: `ident()` e.g. `{{ env('USER') }}` would retrieve the value of the environment variable "USER".
@@ -99,19 +99,16 @@ Full API documentation can be found on [docs.rs](https://docs.rs/templar/)
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+pub mod macros;
+
 pub(crate) use error::*;
 use std::{collections::HashMap, sync::Arc};
 
 pub(crate) use execution::*;
 
 pub use {
-    self::{
-        context::Context,
-        error::TemplarError,
-        execution::Data,
-        extensions::{Filter, Function, GenericFilter, GenericFunction, TemplarResult},
-        templar::*,
-    },
+    self::{context::Context, error::TemplarError, execution::Data, templar::*},
     unstructured::Document,
 };
 
@@ -125,3 +122,8 @@ mod execution;
 mod extensions;
 mod parser;
 mod templar;
+
+/// This is the definition used when adding filters to Templar
+pub type Filter = dyn Fn(Data, Data) -> Data + Send + Sync;
+/// This is the definition used when adding functions to Templar
+pub type Function = dyn Fn(Data) -> Data + Send + Sync;

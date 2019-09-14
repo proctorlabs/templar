@@ -7,8 +7,6 @@ pub enum Node {
     Scope(Box<Node>),
     Value(Vec<Document>),
     Operation(Arc<Operation>),
-    Filter(Box<(Node, Arc<Filter>, Node)>),
-    Function(Box<(Arc<Function>, Node)>),
     Array(Vec<Node>),
     Map(BTreeMap<Document, Node>),
 }
@@ -16,8 +14,6 @@ pub enum Node {
 impl fmt::Debug for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Node::Filter(inner) => write!(f, "Node::Filter({:?} | {:?})", inner.0, inner.2),
-            Node::Function(inner) => write!(f, "Node::Function({:?})", inner.1),
             Node::Expr(inner) => write!(f, "Node::Expr({:?})", inner),
             Node::Operation(inner) => write!(f, "Node::Operation({:?})", inner),
             Node::Data(inner) => write!(f, "Node::Data({:?})", inner),
@@ -39,26 +35,10 @@ impl Node {
     pub(crate) fn exec(&self, ctx: &Context) -> Data {
         match self {
             Self::Data(d) => d.clone(),
-            Self::Expr(a) => {
-                let mut res: Vec<Data> = a.iter().map(|n| n.exec(ctx)).collect();
-                if res.is_empty() {
-                    Data::empty()
-                } else if res.len() == 1 {
-                    res.pop().unwrap()
-                } else {
-                    Data::from_vec(res)
-                }
-            }
+            Self::Operation(op) => op.exec(ctx),
             Self::Value(a) => {
                 let docs = a.iter().collect::<Vec<&Document>>();
                 ctx.get_path(&docs)
-            }
-            Self::Operation(op) => op.exec(ctx),
-            Self::Filter(b) => {
-                let (piped, filter, args) = (&b.0, &b.1, &b.2);
-                let p = piped.exec(ctx);
-                let a = args.exec(ctx);
-                filter(p, a)
             }
             Self::Scope(i) => {
                 let local_context = ctx.create_scope();
@@ -75,12 +55,14 @@ impl Node {
                 }
                 map.into()
             }
-            Self::Function(m) => {
-                let (function, args) = (&m.0, &m.1);
-                let a = args.exec(ctx).result();
-                match function(a) {
-                    Ok(d) => d.into(),
-                    Err(e) => e.into(),
+            Self::Expr(a) => {
+                let mut res: Vec<Data> = a.iter().map(|n| n.exec(ctx)).collect();
+                if res.is_empty() {
+                    Data::empty()
+                } else if res.len() == 1 {
+                    res.pop().unwrap()
+                } else {
+                    Data::from_vec(res)
                 }
             }
         }

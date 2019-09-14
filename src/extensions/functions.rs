@@ -7,64 +7,79 @@ use std::process::Command;
 use std::str;
 
 #[cfg(feature = "json-extension")]
-pub fn json(args: TemplarResult) -> TemplarResult {
-    Ok(serde_json::from_str(&args?.to_string()).wrap()?)
+pub fn json(args: Data) -> Data {
+    let data_str = data_unwrap_into!(String: args);
+    Data::from_result(serde_json::from_str(&data_str).wrap())
 }
 
 #[cfg(feature = "yaml-extension")]
-pub fn yaml(args: TemplarResult) -> TemplarResult {
-    Ok(serde_yaml::from_str(&args?.to_string()).wrap()?)
+pub fn yaml(args: Data) -> Data {
+    let data_str = data_unwrap_into!(String: args);
+    Data::from_result(serde_yaml::from_str(&data_str).wrap())
 }
 
-pub fn file(args: TemplarResult) -> TemplarResult {
-    let path: PathBuf = args?.to_string().into();
-    let mut f = File::open(path)?;
-    let mut result = String::new();
-    f.read_to_string(&mut result)?;
-    Ok(result.into())
+pub fn file(args: Data) -> Data {
+    let path: PathBuf = data_unwrap_into!(String: args).into();
+    match File::open(path) {
+        Ok(mut f) => {
+            let mut result = String::new();
+            match f.read_to_string(&mut result) {
+                Ok(_) => result.into(),
+                Err(e) => TemplarError::from(e).into(),
+            }
+        }
+        Err(e) => TemplarError::from(e).into(),
+    }
 }
 
-pub fn env(args: TemplarResult) -> TemplarResult {
-    let env_name = args?.to_string();
-    Ok(std::env::var(env_name).unwrap_or_default().into())
+pub fn env(args: Data) -> Data {
+    let env_name = data_unwrap_into!(String: args);
+    std::env::var(env_name).unwrap_or_default().into()
 }
 
-pub fn script(args: TemplarResult) -> TemplarResult {
+pub fn script(args: Data) -> Data {
     let mut sh_args = vec![Document::String("sh".into()), "-c".into()];
-    match args? {
-        Document::Seq(s) => {
+    match args.result() {
+        Ok(Document::Seq(s)) => {
             for arg in s.iter() {
                 sh_args.push(arg.clone())
             }
         }
-        other => sh_args.push(other),
+        Ok(other) => sh_args.push(other),
+        Err(e) => return e.into(),
     }
-    command(Ok(sh_args.into()))
+    command(sh_args.into())
 }
 
-pub fn command(args: TemplarResult) -> TemplarResult {
+pub fn command(args: Data) -> Data {
     let mut sh_args = vec![];
-    match args? {
-        Document::Seq(s) => {
+    match args.result() {
+        Ok(Document::Seq(s)) => {
             for arg in s.iter() {
                 sh_args.push(arg.to_string())
             }
         }
-        other => sh_args.push(other.to_string()),
+        Ok(other) => sh_args.push(other.to_string()),
+        Err(e) => return e.into(),
     }
-    let result = Command::new("/usr/bin/env").args(sh_args).output()?;
-    let mut map = BTreeMap::<Document, Document>::new();
-    map.insert(
-        "stdout".into(),
-        str::from_utf8(&result.stdout).unwrap_or_default().into(),
-    );
-    map.insert(
-        "stderr".into(),
-        str::from_utf8(&result.stderr).unwrap_or_default().into(),
-    );
-    map.insert(
-        "status".into(),
-        result.status.code().unwrap_or_default().into(),
-    );
-    Ok(map.into())
+    let result = Command::new("/usr/bin/env").args(sh_args).output();
+    match result {
+        Ok(result) => {
+            let mut map = BTreeMap::<Document, Document>::new();
+            map.insert(
+                "stdout".into(),
+                str::from_utf8(&result.stdout).unwrap_or_default().into(),
+            );
+            map.insert(
+                "stderr".into(),
+                str::from_utf8(&result.stderr).unwrap_or_default().into(),
+            );
+            map.insert(
+                "status".into(),
+                result.status.code().unwrap_or_default().into(),
+            );
+            Document::from(map).into()
+        }
+        Err(e) => TemplarError::from(e).into(),
+    }
 }

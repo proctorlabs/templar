@@ -34,7 +34,7 @@ impl TemplarBuilder {
     }
 
     /// Add a function to the configuration with the name specified
-    pub fn add_function<T: 'static + Fn(TemplarResult) -> TemplarResult + Send + Sync>(
+    pub fn add_function<T: 'static + Fn(Data) -> Data + Send + Sync>(
         &mut self,
         name: &str,
         val: T,
@@ -44,31 +44,31 @@ impl TemplarBuilder {
     }
 
     /// Add a function to the configuration using Serde to make the function call generic
-    #[cfg(feature = "generics")]
-    pub fn add_generic_function<
-        'de,
-        T: 'static + serde::Deserialize<'de>,
-        U: 'static + serde::Serialize,
-    >(
-        &mut self,
-        name: &str,
-        inner: GenericFunction<T, U>,
-    ) -> &mut Self {
-        let generic_fn = move |a: TemplarResult| {
-            let sub_args: T = a?.try_into().map_err(|e| {
-                TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
-            })?;
-            let result = inner(sub_args)?;
-            Ok(Document::new(result).map_err(|e| {
-                TemplarError::RenderFailure(format!(
-                    "Could not serialize result into Document: {}",
-                    e
-                ))
-            })?)
-        };
-        self.functions.insert(name.into(), Arc::new(generic_fn));
-        self
-    }
+    // #[cfg(feature = "generics")]
+    // pub fn add_generic_function<
+    //     'de,
+    //     T: 'static + serde::Deserialize<'de>,
+    //     U: 'static + serde::Serialize,
+    // >(
+    //     &mut self,
+    //     name: &str,
+    //     inner: GenericFunction<T, U>,
+    // ) -> &mut Self {
+    //     let generic_fn = move |a: TemplarResult| {
+    //         let sub_args: T = a?.try_into().map_err(|e| {
+    //             TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
+    //         })?;
+    //         let result = inner(sub_args)?;
+    //         Ok(Document::new(result).map_err(|e| {
+    //             TemplarError::RenderFailure(format!(
+    //                 "Could not serialize result into Document: {}",
+    //                 e
+    //             ))
+    //         })?)
+    //     };
+    //     self.functions.insert(name.into(), Arc::new(generic_fn));
+    //     self
+    // }
 
     /// Remove the specified function name from the configuration
     pub fn remove_function(&mut self, name: &str) -> &mut Self {

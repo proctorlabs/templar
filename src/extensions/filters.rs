@@ -4,10 +4,9 @@ use crate::*;
 use std::str;
 
 pub fn length(value: Data, _: Data) -> Data {
-    match value.result() {
-        Ok(Document::Seq(arr)) => (arr.len() as u64).into(),
-        Ok(Document::String(s)) => (s.chars().count() as u64).into(),
-        Err(e) => e.into(),
+    match data_unwrap!(value) {
+        Document::Seq(arr) => (arr.len() as u64).into(),
+        Document::String(s) => (s.chars().count() as u64).into(),
         _ => 1u64.into(),
     }
 }

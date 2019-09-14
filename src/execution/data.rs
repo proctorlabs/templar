@@ -53,6 +53,26 @@ impl Data {
         self.doc.is_none() && self.error.is_none()
     }
 
+    /// Unwrap the data contents
+    ///
+    /// # PANIC!
+    ///
+    /// This will panic if this data struct is empty or contains an error
+    #[inline]
+    pub fn unwrap(self) -> Document {
+        self.doc.unwrap()
+    }
+
+    /// Unwrap the data error
+    ///
+    /// # PANIC!
+    ///
+    /// This will panic if this data struct is empty or does not contain an error
+    #[inline]
+    pub fn unwrap_err(self) -> TemplarError {
+        self.error.unwrap()
+    }
+
     /// Convert the data into a Result<Document>.
     /// In the case of empty data, an empty string is returned.
     pub fn result(self) -> Result<Document> {

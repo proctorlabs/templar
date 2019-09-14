@@ -3,20 +3,6 @@ mod functions;
 
 use crate::*;
 use std::collections::HashMap;
-use unstructured::Document;
-
-/// This is an execution result
-pub type TemplarResult = Result<Document>;
-
-/// Type used for generic filters when generics are enabled
-pub type GenericFilter<'de, T, U, V> = fn(T, U) -> Result<V>;
-/// Filter definition
-pub type Filter = dyn Fn(Data, Data) -> Data + Send + Sync;
-
-/// Type used for generic functions when generics are enabled
-pub type GenericFunction<'de, T, U> = fn(T) -> Result<U>;
-/// Function definition
-pub type Function = dyn Fn(TemplarResult) -> TemplarResult + Send + Sync;
 
 macro_rules! builtin_filters {
     ($( $( #[ $attr:meta ] )* $name:literal : $method:ident),*) => {

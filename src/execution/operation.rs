@@ -2,7 +2,7 @@ use super::*;
 
 pub struct Operation {
     oper: Executors,
-    name: &'static str,
+    name: String,
     nodes: Vec<Node>,
 }
 
@@ -19,6 +19,24 @@ impl fmt::Debug for Operation {
 impl Operation {
     pub(crate) fn exec(&self, ctx: &Context) -> Data {
         Executor::exec(&self.oper, ctx, &self.nodes)
+    }
+
+    pub(crate) fn from_filter(mut name: String, ex: FilterExecutor, nodes: Vec<Node>) -> Self {
+        name.shrink_to_fit();
+        Operation {
+            name,
+            oper: Executors::Filter(ex),
+            nodes,
+        }
+    }
+
+    pub(crate) fn from_function(mut name: String, ex: FunctionExecutor, node: Node) -> Self {
+        name.shrink_to_fit();
+        Operation {
+            name,
+            oper: Executors::Function(ex),
+            nodes: vec![node],
+        }
     }
 }
 
@@ -40,7 +58,7 @@ macro_rules! map_operations {
             pub fn build(&self, nodes: Vec<Node>) -> Operation {
                 match self {
                     $( Operations::$name => Operation {
-                        name: stringify!($name),
+                        name: stringify!($name).into(),
                         oper: $executor::new($fn_name).into(),
                         nodes,
                     }, )*
@@ -74,9 +92,8 @@ macro_rules! simple_pipe {
     ( $( $pipe_name:ident ( $l:ident , $r:ident ) -> { $( $tail:tt )* } ; )* ) => {
         $(
             fn $pipe_name(ctx: & Context, left: &Node, right: &Node) -> Data {
-                match (left.exec(ctx).result(), right.exec(ctx).result()) {
-                    (Ok($l), Ok($r)) => Data::from( $( $tail )* ),
-                    (Err(e), _) | (_, Err(e)) => Data::from(e),
+                match (data_unwrap!(left.exec(ctx)), data_unwrap!(right.exec(ctx))) {
+                    ($l, $r) => Data::from( $( $tail )* ),
                 }
             }
         )*
