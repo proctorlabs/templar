@@ -6,13 +6,20 @@ use std::error::Error;
 use std::fmt;
 use std::sync::Arc;
 
+/// This is the primary error type for template
 #[derive(Debug, Clone)]
 pub enum TemplarError {
+    /// Some error occurred while parsing a template
     ParseFailure(String),
+    /// Some error occurred while rendering a template
     RenderFailure(String),
+    /// Filter referred to by template is not available
     FilterNotFound(String),
+    /// Function referred to by template is not available
     FunctionNotFound(String),
+    /// An I/O error occurred
     IO(String),
+    /// Some other error, check the inner value
     Other(Arc<Box<dyn Error>>),
 }
 

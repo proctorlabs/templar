@@ -1,3 +1,7 @@
+/*!
+The Templar module
+ */
+
 use crate::*;
 
 mod builder;
@@ -108,7 +112,9 @@ impl Templar {
     }
 }
 
+/// Types that can be parsed into templates or trees by Templar
 pub trait Parseable<T>: private::Seal {
+    /// Method used to parse this struct into a template
     fn parse_into(t: Self, templar: &Templar) -> Result<T>;
 }
 

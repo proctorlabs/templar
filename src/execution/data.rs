@@ -1,6 +1,12 @@
 use super::*;
 use unstructured::Document;
 
+/// The `Data` struct is used to represent the raw execution result of a node in a template.
+/// Data can be in one of three states:
+///
+/// * Empty: The execution was successful but there was no result associated. For example, value assignments (x = y)
+/// * Success: The document data can be safely retrieved
+/// * Failure: An error occurred executing this node
 #[derive(Debug, Clone)]
 pub struct Data {
     doc: Option<Document>,
@@ -12,6 +18,7 @@ lazy_static! {
 }
 
 impl Data {
+    /// Create a new empty result
     #[inline]
     pub fn empty() -> Data {
         Data {
@@ -20,6 +27,11 @@ impl Data {
         }
     }
 
+    /// Render this result
+    ///
+    /// If the data is empty, an empty string is returned.
+    /// If this data is in an error state, the error is returned
+    /// Otherwise, the rendered string is returned
     pub fn render(self) -> Result<String> {
         match (self.error, self.doc) {
             (Some(e), _) => Err(e),
@@ -29,16 +41,20 @@ impl Data {
         }
     }
 
+    /// Check if this data struct has a failure
     #[inline]
     pub fn is_failed(&self) -> bool {
         self.error.is_some()
     }
 
+    /// Check if this data struct is empty
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.doc.is_none() && self.error.is_none()
     }
 
+    /// Convert the data into a Result<Document>.
+    /// In the case of empty data, an empty string is returned.
     pub fn result(self) -> Result<Document> {
         match (self.error, self.doc) {
             (Some(e), _) => Err(e),
@@ -47,6 +63,7 @@ impl Data {
         }
     }
 
+    /// Clone this data into a new Result<Document>
     pub fn new_result(&self) -> Result<Document> {
         match (&self.error, &self.doc) {
             (Some(e), _) => Err(e.clone()),
@@ -55,6 +72,7 @@ impl Data {
         }
     }
 
+    /// Retrieve a result with a reference to the underlying document
     pub fn ref_result(&self) -> Result<&Document> {
         match (&self.error, &self.doc) {
             (Some(e), _) => Err(e.clone()),
@@ -63,6 +81,7 @@ impl Data {
         }
     }
 
+    /// Create Data from a result
     pub fn from_result(result: Result<Document>) -> Data {
         match result {
             Ok(result) => Data {
@@ -76,7 +95,7 @@ impl Data {
         }
     }
 
-    pub fn check<T: std::fmt::Debug>(to_check: Result<T>) -> Data {
+    pub(crate) fn check<T: std::fmt::Debug>(to_check: Result<T>) -> Data {
         match to_check {
             Err(e) => Data {
                 doc: None,
@@ -86,7 +105,7 @@ impl Data {
         }
     }
 
-    pub fn from_vec(seq: Vec<Data>) -> Self {
+    pub(crate) fn from_vec(seq: Vec<Data>) -> Self {
         let result: Result<Vec<Document>> = seq.into_iter().map(|d| Ok(d.result()?)).collect();
         match result {
             Ok(docs) => Data {

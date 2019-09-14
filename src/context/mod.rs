@@ -50,6 +50,7 @@ impl<'a> Context<'a> {
         }
     }
 
+    /// Merge the data into the root context
     #[inline]
     pub fn merge<T: Into<Document>>(&self, doc: T) -> Result<()> {
         let orig = self.get().result()?;
@@ -57,6 +58,7 @@ impl<'a> Context<'a> {
         Ok(())
     }
 
+    /// Merge the data into the context at the specified path
     #[inline]
     pub fn merge_path<T>(&self, path: &[&Document], doc: T) -> Result<()>
     where
@@ -67,21 +69,25 @@ impl<'a> Context<'a> {
         Ok(())
     }
 
+    /// Set the root context value
     #[inline]
     pub fn set<T: Into<ContextMapValue>>(&self, doc: T) -> Result<()> {
         self.dispatcher.set_path(&[], doc.into())
     }
 
+    /// Set the value at the specified path
     #[inline]
     pub fn set_path<T: Into<ContextMapValue>>(&self, path: &[&Document], doc: T) -> Result<()> {
         self.dispatcher.set_path(path, doc.into())
     }
 
+    /// Get the root context value
     #[inline]
     pub fn get(&self) -> Data {
         self.dispatcher.get_path(&[], &self)
     }
 
+    /// Get the value at the path
     #[inline]
     pub fn get_path(&self, path: &[&Document]) -> Data {
         self.dispatcher.get_path(path, &self)
