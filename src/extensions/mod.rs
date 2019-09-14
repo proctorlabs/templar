@@ -11,7 +11,7 @@ pub type TemplarResult = Result<Document>;
 /// Type used for generic filters when generics are enabled
 pub type GenericFilter<'de, T, U, V> = fn(T, U) -> Result<V>;
 /// Filter definition
-pub type Filter = dyn Fn(TemplarResult, TemplarResult) -> TemplarResult + Send + Sync;
+pub type Filter = dyn Fn(Data, Data) -> Data + Send + Sync;
 
 /// Type used for generic functions when generics are enabled
 pub type GenericFunction<'de, T, U> = fn(T) -> Result<U>;

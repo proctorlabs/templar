@@ -77,9 +77,7 @@ impl TemplarBuilder {
     }
 
     /// Add a filter to the configuration with the specified signature
-    pub fn add_filter<
-        T: 'static + Fn(TemplarResult, TemplarResult) -> TemplarResult + Send + Sync,
-    >(
+    pub fn add_filter<T: 'static + Fn(Data, Data) -> Data + Send + Sync>(
         &mut self,
         name: &str,
         val: T,
@@ -89,35 +87,35 @@ impl TemplarBuilder {
     }
 
     /// Add a filter to the configuration using serde to call it generically
-    #[cfg(feature = "generics")]
-    pub fn add_generic_filter<
-        'de,
-        T: 'static + serde::Deserialize<'de>,
-        U: 'static + serde::Deserialize<'de>,
-        V: 'static + serde::Serialize,
-    >(
-        &mut self,
-        name: &str,
-        inner: GenericFilter<T, U, V>,
-    ) -> &mut Self {
-        let generic_filter = move |a: TemplarResult, b: TemplarResult| {
-            let arg1: T = a?.try_into().map_err(|e| {
-                TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
-            })?;
-            let arg2: U = b?.try_into().map_err(|e| {
-                TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
-            })?;
-            let result = inner(arg1, arg2)?;
-            Ok(Document::new(result).map_err(|e| {
-                TemplarError::RenderFailure(format!(
-                    "Could not serialize result into Document: {}",
-                    e
-                ))
-            })?)
-        };
-        self.filters.insert(name.into(), Arc::new(generic_filter));
-        self
-    }
+    // #[cfg(feature = "generics")]
+    // pub fn add_generic_filter<
+    //     'de,
+    //     T: 'static + serde::Deserialize<'de>,
+    //     U: 'static + serde::Deserialize<'de>,
+    //     V: 'static + serde::Serialize,
+    // >(
+    //     &mut self,
+    //     name: &str,
+    //     inner: GenericFilter<T, U, V>,
+    // ) -> &mut Self {
+    //     let generic_filter = move |a: TemplarResult, b: TemplarResult| {
+    //         let arg1: T = a?.try_into().map_err(|e| {
+    //             TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
+    //         })?;
+    //         let arg2: U = b?.try_into().map_err(|e| {
+    //             TemplarError::RenderFailure(format!("Arguments could not be deserialized: {}", e))
+    //         })?;
+    //         let result = inner(arg1, arg2)?;
+    //         Ok(Document::new(result).map_err(|e| {
+    //             TemplarError::RenderFailure(format!(
+    //                 "Could not serialize result into Document: {}",
+    //                 e
+    //             ))
+    //         })?)
+    //     };
+    //     self.filters.insert(name.into(), Arc::new(generic_filter));
+    //     self
+    // }
 
     /// Remove the specified filter name from the configuration
     pub fn remove_filter(&mut self, name: &str) -> &mut Self {

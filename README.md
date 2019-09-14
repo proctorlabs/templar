@@ -60,7 +60,7 @@ of the currently supported features.
     * The root node can be referred to with `.` allowing things like `{{ . | json }}` to be used to dump the entire context as JSON
     * Identifiers of non-standard type, e.g. starting with a non-alphabetic character, spaces, etc. can be referred to using the
       bracket syntax. e.g. `{{ .['565'] }}`. This also allows array access and identifier of non-standard types (such as boolean).
-    * Inline arrays: `{{ [1,2,3,4] }}` and complex nesting also possible e.g. `{{ [1,2, script("echo 'hello world!'"), (5 + 5 | base64)] }}
+    * Inline arrays: `{{ [1,2,3,4] }}` and complex nesting also possible e.g. `{{ [1,2, script("echo 'hello world!'"), (5 + 5 | base64)] }}`
     * Inline maps: `{{ {'key': 'value', 'otherKey': { 'nested': 'map' } } }}`
 * Control flow can be done using the `{% %}` syntax
     * If/else if: `{% if 10/2 == 5 %}The world is sane!{% else if false %}What universe are we in?{% end if %}`
@@ -70,6 +70,8 @@ of the currently supported features.
 * Whitespace control can be accomplished by adding a `-` to any of the above blocks e.g. `{{- 'no whitespace! -}}`.
     * Whitespace control can be added to one or both sides of the tags. All spaces, new lines, or other whitespace on the side with the `-`
       on it will be removed as if the block is immediately next to the other element.
+
+As documentation is still in progress, see the [kitchen sink](./examples/kitchen_sink.tmpl) for examples of template usage.
 
 ## Expression syntax
 
@@ -82,6 +84,8 @@ many individual operations. A quick overview:
 * String concatenation: `~` e.g. `{{ 'Hello' ~ ' ' ~ 'world!' }}` prints "Hello world!"
 * Functions: `ident()` e.g. `{{ env('USER') }}` would retrieve the value of the environment variable "USER".
 * Filters: `|` e.g. `{{ 'hello world' | upper }}` would use the 'upper' filter to print "HELLO WORLD"
+
+As documentation is still in progress, see the [expression tests](./src/test/expressions.rs) for examples of expression usage.
 
 ## Performance
 

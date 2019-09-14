@@ -10,6 +10,7 @@ pub(crate) enum Executors {
     Conditional(ConditionalExecutor),
     Indeterminate(IndeterminateExecutor),
     Loop(LoopExecutor),
+    Filter(FilterExecutor),
 }
 
 pub(crate) struct IndeterminateExecutor(fn(&Context, input: &[Node]) -> Data);
@@ -85,8 +86,24 @@ impl LoopExecutor {
     }
 }
 
+pub(crate) struct FilterExecutor(Arc<dyn Fn(&Context, &Node, &Node) -> Data + Sync + Send>);
+
+impl FilterExecutor {
+    #[inline]
+    pub fn new(new_fn: Arc<dyn Fn(&Context, &Node, &Node) -> Data + Sync + Send>) -> Self {
+        Self(new_fn)
+    }
+}
+
 pub(crate) trait Executor {
     fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data;
+}
+
+impl From<FilterExecutor> for Executors {
+    #[inline]
+    fn from(t: FilterExecutor) -> Self {
+        Self::Filter(t)
+    }
 }
 
 impl From<PipedExecutor> for Executors {
@@ -125,6 +142,7 @@ impl Executor for Executors {
             Self::Conditional(ref ex) => ex.exec(ctx, nodes),
             Self::Indeterminate(ref ex) => ex.exec(ctx, nodes),
             Self::Loop(ref ex) => ex.exec(ctx, nodes),
+            Self::Filter(ref ex) => ex.exec(ctx, nodes),
         }
     }
 }
@@ -133,6 +151,13 @@ impl Executor for IndeterminateExecutor {
     #[inline]
     fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data {
         self.0(ctx, &nodes)
+    }
+}
+
+impl Executor for FilterExecutor {
+    #[inline]
+    fn exec(&self, ctx: &Context, nodes: &[Node]) -> Data {
+        self.0(ctx, &nodes[0], &nodes[1])
     }
 }
 

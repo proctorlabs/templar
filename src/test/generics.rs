@@ -17,14 +17,14 @@ fn call_generic_function() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn call_generic_filter() -> Result<()> {
-    let mut builder = TemplarBuilder::default();
-    builder.add_generic_filter("add_single", |inc: i64, arg: i64| Ok(inc + arg));
-    let templar = builder.build();
-    let template = templar.parse_expression("5 + 3 | add_single(2)")?;
-    let context = Context::new_standard(Document::Unit);
-    let res: i64 = template.exec(&context)?.try_into().unwrap();
-    assert_eq!(res, 10 as i64);
-    Ok(())
-}
+// #[test]
+// fn call_generic_filter() -> Result<()> {
+//     let mut builder = TemplarBuilder::default();
+//     builder.add_generic_filter("add_single", |inc: i64, arg: i64| Ok(inc + arg));
+//     let templar = builder.build();
+//     let template = templar.parse_expression("5 + 3 | add_single(2)")?;
+//     let context = Context::new_standard(Document::Unit);
+//     let res: i64 = template.exec(&context)?.try_into().unwrap();
+//     assert_eq!(res, 10 as i64);
+//     Ok(())
+// }

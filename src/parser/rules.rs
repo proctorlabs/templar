@@ -37,6 +37,7 @@ macro_rules! parse_token {
             }
             result.truncate(result.len() - 1);
             result.remove(0);
+            result.shrink_to_fit();
             Node::Data(result.into())
         })?;
     }};

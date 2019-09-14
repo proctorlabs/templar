@@ -56,12 +56,9 @@ impl Node {
             Self::Operation(op) => op.exec(ctx),
             Self::Filter(b) => {
                 let (piped, filter, args) = (&b.0, &b.1, &b.2);
-                let p = piped.exec(ctx).result();
-                let a = args.exec(ctx).result();
-                match filter(p, a) {
-                    Ok(d) => d.into(),
-                    Err(e) => e.into(),
-                }
+                let p = piped.exec(ctx);
+                let a = args.exec(ctx);
+                filter(p, a)
             }
             Self::Scope(i) => {
                 let local_context = ctx.create_scope();

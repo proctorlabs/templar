@@ -68,6 +68,7 @@ impl<'a> ParseTree<'a> {
     pub fn filter(&mut self, filter: &str, args: Node) -> Result<()> {
         self.finish_op()?;
         let tree = replace(&mut self.tree, vec![]);
+        // let nodes = vec![tree.into(), args];
         self.tree = vec![Node::Filter(Box::new((
             tree.into(),
             self.templar
