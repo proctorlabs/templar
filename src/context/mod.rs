@@ -19,28 +19,32 @@ pub trait ContextDispatcher: Debug {
     fn get_path(&self, path: &[&Document], ctx: &Context) -> Data;
 }
 
+/// This is the context used for template rendering. It can hold either static or dynamic
+/// data.
 #[derive(Debug)]
 pub struct Context<'a> {
     dispatcher: Box<dyn ContextDispatcher + 'a>,
 }
 
 impl<'a> Context<'a> {
-    pub(crate) fn create_scope(&'a self) -> Context<'a> {
+    /// Create a new scope for this context. Any new data set here will not affect the parent
+    /// context but will be available to all data rendered inside the scope.
+    pub(crate) fn create_scope(&'a self) -> Self {
         Context {
             dispatcher: Box::new(ScopedContext::new(&self.dispatcher)),
         }
     }
-}
 
-impl Context<'_> {
-    pub fn new_standard<T: Into<ContextMapValue>>(initial_value: T) -> Self {
+    /// Create a new standard context. Use this when thread safety is not needed.
+    pub fn new_standard<T: Into<ContextMapValue>>(initial_value: T) -> Context<'static> {
         Context {
             dispatcher: Box::new(StandardContext::new(initial_value)),
         }
     }
 
+    /// Create a new shared context. This is a thread safe context.
     #[cfg(feature = "shared-context")]
-    pub fn new_shared<T: Into<ContextMapValue>>(initial_value: T) -> Self {
+    pub fn new_shared<T: Into<ContextMapValue>>(initial_value: T) -> Context<'static> {
         Context {
             dispatcher: Box::new(SharedContext::new(initial_value)),
         }

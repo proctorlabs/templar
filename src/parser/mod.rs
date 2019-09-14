@@ -13,6 +13,7 @@ use tree::ParseTree;
 struct TemplarParser;
 
 impl Templar {
+    /// This is the non-generic form of parse()
     #[inline]
     pub fn parse_template(&self, input: &str) -> Result<Template> {
         let result: Node = self.parse_match(
@@ -22,6 +23,7 @@ impl Templar {
         Ok(result.set_operation(Operations::Concat).into())
     }
 
+    /// Parses a string directly to a template
     #[inline]
     pub fn parse_expression(&self, input: &str) -> Result<Template> {
         Ok(self
