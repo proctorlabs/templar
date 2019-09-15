@@ -1,18 +1,23 @@
 use super::*;
-use options::{Command, Options};
+use command::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use templar::Templar;
 use unstructured::Document;
 
-mod options;
+mod command;
 
 pub fn run() -> Result<()> {
-    let options = Options::parse()?;
-    match &options.command {
-        Command::Expression { ref text } => run_expression(&options, text),
-        Command::Template { ref file } => run_template(&options, file),
+    match Command::parse()? {
+        Command::Expression {
+            ref text,
+            ref options,
+        } => run_expression(options, text),
+        Command::Template {
+            ref file,
+            ref options,
+        } => run_template(options, file),
     }
 }
 

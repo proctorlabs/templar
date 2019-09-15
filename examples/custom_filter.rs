@@ -9,6 +9,7 @@ const TEMPLATE: &str = r#"
 // This macro will also throw sane errors if incoming data types are not what is expected.
 // If you need to throw an error inside your macro definition, you can return TemplarError::RenderFailure(format!("Message")).into()
 // and these errors will propagate up to the render() or exec() calls to the template.
+// See the `Filter` type in lib.rs if you can't or don't want to use the macro.
 templar_filter! {
     fn repeater(inc: String | String, repeat: i64 | I64) -> String {
         let mut to_repeat = String::new();
