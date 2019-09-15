@@ -29,7 +29,7 @@ impl<'a> ContextWalk<'a> {
             new_walk = Some(if res.is_failed() || res.is_empty() {
                 res.into()
             } else {
-                match res.result() {
+                match res.into_result() {
                     Ok(Document::Map(m)) => m.get(key).cloned().into(),
                     Ok(other) => other.into(),
                     Err(e) => e.into(),

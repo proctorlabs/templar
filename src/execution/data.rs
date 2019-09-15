@@ -2,11 +2,11 @@ use super::*;
 use unstructured::Document;
 
 /// The `Data` struct is used to represent the raw execution result of a node in a template.
-/// Data can be in one of three states:
+/// Data can currently be in one of three states:
 ///
-/// * Empty: The execution was successful but there was no result associated. For example, value assignments (x = y)
-/// * Success: The document data can be safely retrieved
-/// * Failure: An error occurred executing this node
+/// - Empty: The execution was successful but there was no result associated. For example, value assignments (x = y)
+/// - Success: The document data can be safely retrieved
+/// - Failure: An error occurred executing this node
 #[derive(Debug, Clone)]
 pub struct Data {
     doc: Option<Document>,
@@ -17,7 +17,7 @@ lazy_static! {
     static ref EMPTY_DOC: Document = { Document::String("".into()) };
 }
 
-impl Data {
+impl<'a> Data {
     /// Create a new empty result
     #[inline]
     pub fn empty() -> Data {
@@ -75,7 +75,7 @@ impl Data {
 
     /// Convert the data into a Result<Document>.
     /// In the case of empty data, an empty string is returned.
-    pub fn result(self) -> Result<Document> {
+    pub fn into_result(self) -> Result<Document> {
         match (self.error, self.doc) {
             (Some(e), _) => Err(e),
             (_, Some(doc)) => Ok(doc),
@@ -84,7 +84,7 @@ impl Data {
     }
 
     /// Clone this data into a new Result<Document>
-    pub fn new_result(&self) -> Result<Document> {
+    pub fn clone_result(&self) -> Result<Document> {
         match (&self.error, &self.doc) {
             (Some(e), _) => Err(e.clone()),
             (_, Some(doc)) => Ok(doc.clone()),
@@ -93,7 +93,7 @@ impl Data {
     }
 
     /// Retrieve a result with a reference to the underlying document
-    pub fn ref_result(&self) -> Result<&Document> {
+    pub fn to_result(&'a self) -> Result<&'a Document> {
         match (&self.error, &self.doc) {
             (Some(e), _) => Err(e.clone()),
             (_, Some(doc)) => Ok(doc),
@@ -126,7 +126,7 @@ impl Data {
     }
 
     pub(crate) fn from_vec(seq: Vec<Data>) -> Self {
-        let result: Result<Vec<Document>> = seq.into_iter().map(|d| Ok(d.result()?)).collect();
+        let result: Result<Vec<Document>> = seq.into_iter().map(|d| Ok(d.into_result()?)).collect();
         match result {
             Ok(docs) => Data {
                 doc: Some(docs.into()),

@@ -39,7 +39,7 @@ pub fn env(args: Data) -> Data {
 
 pub fn script(args: Data) -> Data {
     let mut sh_args = vec![Document::String("sh".into()), "-c".into()];
-    match args.result() {
+    match args.into_result() {
         Ok(Document::Seq(s)) => {
             for arg in s.iter() {
                 sh_args.push(arg.clone())
@@ -53,7 +53,7 @@ pub fn script(args: Data) -> Data {
 
 pub fn command(args: Data) -> Data {
     let mut sh_args = vec![];
-    match args.result() {
+    match args.into_result() {
         Ok(Document::Seq(s)) => {
             for arg in s.iter() {
                 sh_args.push(arg.to_string())

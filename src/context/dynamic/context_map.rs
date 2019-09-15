@@ -98,7 +98,7 @@ impl ContextMapValue {
             ContextMapValue::Map(map) => {
                 let mut result: BTreeMap<Document, Document> = BTreeMap::new();
                 for (k, v) in map.iter() {
-                    match v.exec(ctx).result() {
+                    match v.exec(ctx).into_result() {
                         Ok(d) => result.insert(k.clone(), d),
                         Err(e) => return e.into(),
                     };
@@ -107,7 +107,7 @@ impl ContextMapValue {
             }
             ContextMapValue::Seq(s) => {
                 let result: Result<Vec<Document>> =
-                    s.iter().map(|v| v.exec(ctx).result()).collect();
+                    s.iter().map(|v| v.exec(ctx).into_result()).collect();
                 match result {
                     Ok(s) => s.into(),
                     Err(e) => e.into(),

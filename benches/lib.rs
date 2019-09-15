@@ -7,14 +7,14 @@ use templar::error::*;
 use templar::{Context, Templar, Template};
 
 static EXPR: &str = r#"
-This is a bigger template.
+This is a template.
 
 {# It includes comments #}
 {{ `and expressions` }}
 {{ "THAT CAN CALL FILTERS" | lower }}
 "#;
 
-fn parse_expression(template: &Template, context: &Context) -> Result<()> {
+fn exec_expression(template: &Template, context: &Context) -> Result<()> {
     template.exec(context)?;
     Ok(())
 }
@@ -22,8 +22,8 @@ fn parse_expression(template: &Template, context: &Context) -> Result<()> {
 fn criterion_benchmark(c: &mut Criterion) {
     let template = Templar::global().parse_template(EXPR).unwrap();
     let context = Context::new_standard(unstructured::Document::Unit);
-    c.bench_function("parse simple expression", |b| {
-        b.iter(|| parse_expression(black_box(&template), black_box(&context)))
+    c.bench_function("Execute a simple expression", |b| {
+        b.iter(|| exec_expression(black_box(&template), black_box(&context)))
     });
 }
 

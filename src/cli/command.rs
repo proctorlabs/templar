@@ -17,7 +17,7 @@ pub enum Command {
         rename_all = "kebab_case", 
         settings = &[UnifiedHelpMessage]
     )]
-    /// Run an expression directly
+    /// Execute an expression and render the output
     Expression {
         /// The expression to run
         text: String,
@@ -28,7 +28,7 @@ pub enum Command {
         rename_all = "kebab_case", 
         settings = &[UnifiedHelpMessage]
     )]
-    /// Run a template
+    /// Execute a template and render the output
     Template {
         /// Template file(s) to open
         file: PathBuf,

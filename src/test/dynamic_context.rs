@@ -9,21 +9,21 @@ somedict:
 
 #[test]
 fn run_dynamic_context() -> Result<()> {
-  let template = Templar::global().parse_yaml(DYN_CONTEXT)?;
-  let context = Context::new_standard(template);
-  let tmpl: Template = Templar::global().parse_template("{{ somedict.dynamic }}")?;
-  let result = tmpl.render(&context)?;
-  assert_eq!(result, "VALUE".to_string());
-  Ok(())
+    let template = Templar::global().parse_yaml(DYN_CONTEXT)?;
+    let context = Context::new_standard(template);
+    let tmpl: Template = Templar::global().parse_template("{{ somedict.dynamic }}")?;
+    let result = tmpl.render(&context)?;
+    assert_eq!(result, "VALUE".to_string());
+    Ok(())
 }
 
 #[test]
 fn run_dynamic_context_new_value() -> Result<()> {
-  let template = Templar::global().parse_yaml(DYN_CONTEXT)?;
-  let context = Context::new_standard(template);
-  let tmpl: Template =
-    Templar::global().parse_template("{{ one.two.three = 'HELLO!!' }}{{ somedict.unknown }}")?;
-  let result = tmpl.render(&context)?;
-  assert_eq!(result, "HELLO!!".to_string());
-  Ok(())
+    let template = Templar::global().parse_yaml(DYN_CONTEXT)?;
+    let context = Context::new_standard(template);
+    let tmpl: Template = Templar::global()
+        .parse_template("{{ one.two.three = 'HELLO!!' }}{{ somedict.unknown }}")?;
+    let result = tmpl.render(&context)?;
+    assert_eq!(result, "HELLO!!".to_string());
+    Ok(())
 }

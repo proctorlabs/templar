@@ -12,24 +12,15 @@ pub fn length(value: Data, _: Data) -> Data {
 }
 
 pub fn upper(value: Data, _: Data) -> Data {
-    match value.render() {
-        Ok(s) => s.to_uppercase().into(),
-        Err(e) => e.into(),
-    }
+    render_unwrap!(value).to_uppercase().into()
 }
 
 pub fn lower(value: Data, _: Data) -> Data {
-    match value.render() {
-        Ok(s) => s.to_lowercase().into(),
-        Err(e) => e.into(),
-    }
+    render_unwrap!(value).to_lowercase().into()
 }
 
 pub fn trim(value: Data, _: Data) -> Data {
-    match value.render() {
-        Ok(s) => s.trim().into(),
-        Err(e) => e.into(),
-    }
+    render_unwrap!(value).trim().into()
 }
 
 #[cfg(feature = "base64-extension")]
@@ -62,7 +53,7 @@ pub fn split(value: Data, args: Data) -> Data {
         }
         _ => "\n".to_string(),
     };
-    match value.result() {
+    match value.into_result() {
         Ok(Document::String(s)) => Document::Seq(s.split(&delim).map(|s| s.into()).collect()),
         _ => Document::Seq(vec![]),
     }
@@ -80,7 +71,7 @@ pub fn join(value: Data, args: Data) -> Data {
         }
         _ => "\n".to_string(),
     };
-    match value.result() {
+    match value.into_result() {
         Ok(Document::Seq(s)) => s
             .iter()
             .map(|i| i.to_string())
@@ -93,12 +84,12 @@ pub fn join(value: Data, args: Data) -> Data {
 }
 
 pub fn index(value: Data, args: Data) -> Data {
-    let arg = match args.result() {
+    let arg = match args.into_result() {
         Ok(i) => i.as_usize(),
         Err(e) => return e.into(),
     };
     if let Some(i) = arg {
-        match value.result() {
+        match value.into_result() {
             Ok(Document::Seq(s)) => s.get(i).cloned().unwrap_or_default().into(),
             _ => Document::Unit.into(),
         }
@@ -109,7 +100,7 @@ pub fn index(value: Data, args: Data) -> Data {
 
 #[cfg(feature = "json-extension")]
 pub fn json(value: Data, args: Data) -> Data {
-    match value.result() {
+    match value.into_result() {
         Ok(val) => {
             let arg = args.render().unwrap_or_default();
             match arg.as_str() {
@@ -125,7 +116,7 @@ pub fn json(value: Data, args: Data) -> Data {
 
 #[cfg(feature = "yaml-extension")]
 pub fn yaml(value: Data, _: Data) -> Data {
-    match value.result() {
+    match value.into_result() {
         Ok(val) => serde_yaml::to_string(&val).unwrap_or_default().into(),
         Err(e) => e.into(),
     }
@@ -145,8 +136,8 @@ pub fn key(value: Data, args: Data) -> Data {
         )
         .into();
     }
-    match value.result() {
-        Ok(Document::Map(map)) => map[&args.result().unwrap()].clone().into(),
+    match value.into_result() {
+        Ok(Document::Map(map)) => map[&args.into_result().unwrap()].clone().into(),
         _ => TemplarError::RenderFailure(
             "Attempted to retrieve a key on a value that is not a map".into(),
         )
@@ -162,8 +153,26 @@ pub fn default(value: Data, args: Data) -> Data {
     }
 }
 
+pub fn escape_html(value: Data, _: Data) -> Data {
+    let input = render_unwrap!(value);
+    let len = input.len();
+    let mut out = String::with_capacity(len + (len / 4));
+    for c in input.chars() {
+        match c {
+            '"' => out.push_str("&quot;"), //" VSCode thinks this match is invalid, but this comment fixes that annoyance
+            '/' => out.push_str("&#x2F;"),
+            '\'' => out.push_str("&#x27;"),
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            _ => out.push(c),
+        }
+    }
+    out.into()
+}
+
 pub fn require(value: Data, _: Data) -> Data {
-    match value.result() {
+    match value.into_result() {
         Ok(Document::Unit) => {}
         Ok(other) => return other.into(),
         Err(e) => return e.into(),

@@ -129,7 +129,7 @@ simple_pipe! {
 }
 
 fn if_then(ctx: &Context, cnd: &Node, p: &Node, n: &Node) -> Data {
-    let cnd = cnd.exec(ctx).result();
+    let cnd = cnd.exec(ctx).into_result();
     match cnd {
         Ok(Document::Bool(true)) => p.exec(ctx),
         Ok(Document::Bool(false)) => n.exec(ctx),
@@ -154,7 +154,7 @@ fn concat(ctx: &Context, input: &[Node]) -> Data {
 
 fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> Data {
     // Get the result for the value we're iterating over
-    let array_exec = array_path.exec(ctx).result();
+    let array_exec = array_path.exec(ctx).into_result();
     if let Err(e) = array_exec {
         return e.into();
     }
@@ -170,7 +170,7 @@ fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> D
                 if r.is_err() {
                     return Data::check(r);
                 }
-                let res = exec.exec(ctx).result();
+                let res = exec.exec(ctx).into_result();
                 if let Err(e) = res {
                     return e.into();
                 }
@@ -189,7 +189,7 @@ fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> D
                 if r.is_err() {
                     return Data::check(r);
                 }
-                let res = exec.exec(ctx).result();
+                let res = exec.exec(ctx).into_result();
                 if let Err(e) = res {
                     return e.into();
                 }
@@ -212,7 +212,7 @@ fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> D
 }
 
 fn set(ctx: &Context, left: &Node, right: &Node) -> Data {
-    let val = right.exec(ctx).result();
+    let val = right.exec(ctx).into_result();
     match (left, val) {
         (_, Err(e)) => e.into(),
         (Node::Value(path), Ok(ref mut val)) => {
@@ -220,7 +220,7 @@ fn set(ctx: &Context, left: &Node, right: &Node) -> Data {
             Data::check(ctx.set_path(&ref_vec, val.take()))
         }
         (eval, Ok(ref mut val)) => {
-            let path = eval.exec(ctx).result();
+            let path = eval.exec(ctx).into_result();
             if let Err(e) = path {
                 return e.into();
             }

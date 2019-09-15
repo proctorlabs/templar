@@ -44,7 +44,7 @@ impl Template {
     /// ```
     pub fn exec(&self, ctx: &Context) -> Result<Document> {
         let local_ctx = ctx.create_scope();
-        self.0.exec(&local_ctx).result()
+        self.0.exec(&local_ctx).into_result()
     }
 
     pub(crate) fn root_node(&self) -> Arc<Node> {

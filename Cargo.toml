@@ -50,14 +50,13 @@ structopt = { version = "0.3", optional = true }
 criterion = "0.3"
 
 [features]
-default = ["yaml-extension", "base64-extension"]
+default = ["shared-context", "yaml-extension", "json-extension", "base64-extension"]
 
 #ser/deser extensions
-generics = ["serde"]
-toml-extension = ["generics", "toml"]
-xml-extension = ["generics", "serde-xml-rs"]
-json-extension = ["generics", "serde_json"]
-yaml-extension = ["generics", "serde_yaml"]
+toml-extension = ["serde", "toml"]
+xml-extension = ["serde", "serde-xml-rs"]
+json-extension = ["serde", "serde_json"]
+yaml-extension = ["serde", "serde_yaml"]
 
 #other
 shared-context = ["parking_lot"]

@@ -24,9 +24,23 @@ macro_rules! data_unwrap {
 #[macro_export]
 macro_rules! data_unwrap_into {
     ($type:ident : $data:expr) => {{
-        match $data.result() {
+        match $data.into_result() {
             Ok(Document::$type(t)) => t,
             Ok(o) => return o.into(),
+            Err(e) => return e.into(),
+        }
+    }};
+}
+
+/// render_unwrap!() safely renders a Data struct into a string.
+///
+/// If the Data is failed or empty, the data is immediately returned. Because of this,
+/// this macro can only be used in functions that return `Data`.
+#[macro_export]
+macro_rules! render_unwrap {
+    ($data:expr) => {{
+        match $data.render() {
+            Ok(s) => s,
             Err(e) => return e.into(),
         }
     }};
@@ -44,7 +58,7 @@ macro_rules! templar_filter {
     ( $( fn $name:ident ( $left:ident : $left_ty:ty | $left_var:ident, $right:ident : $right_ty:ty | $right_var:ident) -> $out:ty { $( $tail:tt )* } )* ) => {
         $(
             pub fn $name(left: Data, right: Data) -> Data {
-                match (left.result(), right.result()) {
+                match (left.into_result(), right.into_result()) {
                     (Err(e), _) | (_, Err(e)) => return e.into(),
                     (Ok(l), Ok(r)) => {
                         let $left: $left_ty = match l {
@@ -77,7 +91,7 @@ macro_rules! templar_function {
     ( $( fn $name:ident ( $left:ident : $left_ty:ty | $left_var:ident) -> $out:ty { $( $tail:tt )* } )* ) => {
         $(
             pub fn $name(left: Data) -> Data {
-                left.result() {
+                left.into_result() {
                     Err(e) => return e.into(),
                     Ok(l) => {
                         let $left: $left_ty = match l {

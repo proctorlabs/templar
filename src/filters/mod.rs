@@ -35,5 +35,7 @@ builtin_filters! {
     "base64":base64,
     "join":join,
     "string":string,
-    "key":key
+    "key":key,
+    "escape_html":escape_html,
+    "e":escape_html
 }

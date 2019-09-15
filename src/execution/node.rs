@@ -48,7 +48,7 @@ impl Node {
             Self::Map(m) => {
                 let mut map: BTreeMap<Document, Document> = BTreeMap::new();
                 for (key, node) in m.iter() {
-                    match node.exec(ctx).result() {
+                    match node.exec(ctx).into_result() {
                         Ok(d) => map.insert(key.clone(), d),
                         Err(e) => return e.into(),
                     };
@@ -81,7 +81,7 @@ impl Node {
 
     pub(crate) fn into_document(self) -> Result<Document> {
         match self {
-            Self::Data(d) => Ok(d.result()?),
+            Self::Data(d) => Ok(d.into_result()?),
             _ => Err(TemplarError::RenderFailure(
                 "Attempted document conversion on unprocessed node".into(),
             )),

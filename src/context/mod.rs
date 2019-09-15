@@ -53,9 +53,18 @@ impl<'a> Context<'a> {
     /// Merge the data into the root context
     #[inline]
     pub fn merge<T: Into<Document>>(&self, doc: T) -> Result<()> {
-        let orig = self.get().result()?;
-        self.set(orig + doc.into())?;
-        Ok(())
+        match doc.into() {
+            Document::Map(m) => {
+                for (k, v) in m.into_iter() {
+                    let orig = self.get_path(&[&k]).into_result().unwrap_or_default();
+                    self.set_path(&[&k], orig + v)?;
+                }
+                Ok(())
+            }
+            _ => Err(TemplarError::ParseFailure(
+                "Cannot merge a non-mapping into the root context".into(),
+            )),
+        }
     }
 
     /// Merge the data into the context at the specified path
@@ -64,7 +73,7 @@ impl<'a> Context<'a> {
     where
         Document: From<T>,
     {
-        let orig = self.get_path(path).result()?;
+        let orig = self.get_path(path).into_result()?;
         self.set_path::<Document>(path, orig + Document::from(doc))?;
         Ok(())
     }

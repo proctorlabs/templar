@@ -98,4 +98,7 @@ test_expressions! {
     // set
     test_set: "val = 'hello'" == "";
     test_set_return: "val = 'hello' ~ val" == "hello";
+
+    // HTML Escape
+    escape_html: "`<script>alert('hello!')</script>` | e" == "&lt;script&gt;alert(&#x27;hello!&#x27;)&lt;&#x2F;script&gt;";
 }

@@ -13,6 +13,8 @@ pub enum TemplarError {
     ParseFailure(String),
     /// Some error occurred while rendering a template
     RenderFailure(String),
+    /// Error occurred while manipulating the context
+    ContextFailure(String),
     /// Filter referred to by template is not available
     FilterNotFound(String),
     /// Function referred to by template is not available
@@ -28,6 +30,7 @@ impl fmt::Display for TemplarError {
         match self {
             TemplarError::ParseFailure(s) => write!(f, "Could not parse template. {}", s),
             TemplarError::RenderFailure(s) => write!(f, "Could not render template. {}", s),
+            TemplarError::ContextFailure(s) => write!(f, "Could not update context. {}", s),
             TemplarError::FilterNotFound(s) => write!(
                 f,
                 "Filter '{}' was not found while building this expression",
