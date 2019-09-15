@@ -10,8 +10,8 @@ use super::*;
 /// let templar = builder.build();
 /// ```
 pub struct TemplarBuilder {
-    functions: HashMap<String, Arc<Function>>,
-    filters: HashMap<String, Arc<Filter>>,
+    functions: HashMap<String, Arc<functions::Function>>,
+    filters: HashMap<String, Arc<filters::Filter>>,
 }
 
 impl Default for TemplarBuilder {

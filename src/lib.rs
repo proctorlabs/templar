@@ -108,7 +108,12 @@ use std::{collections::HashMap, sync::Arc};
 pub(crate) use execution::*;
 
 pub use {
-    self::{context::Context, error::TemplarError, execution::Data, templar::*},
+    self::{
+        context::Context,
+        error::TemplarError,
+        execution::Data,
+        templar::{Templar, TemplarBuilder, Template, TemplateTree},
+    },
     unstructured::Document,
 };
 
@@ -119,12 +124,9 @@ mod test;
 
 mod context;
 mod execution;
-mod filters;
-mod functions;
 mod parser;
 mod templar;
 
-/// This is the definition used when adding filters to Templar
-pub type Filter = dyn Fn(Data, Data) -> Data + Send + Sync;
-/// This is the definition used when adding functions to Templar
-pub type Function = dyn Fn(Data) -> Data + Send + Sync;
+// We export these for documentation purposes, but they have no directly usable code
+pub mod filters;
+pub mod functions;

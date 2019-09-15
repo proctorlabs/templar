@@ -1,15 +1,22 @@
+/*!
+# Filters
+ */
+
 mod common;
 
 use crate::*;
 use std::collections::HashMap;
 
+/// This is the definition used when adding filters to Templar
+pub type Filter = dyn Fn(Data, Data) -> Data + Send + Sync;
+
 macro_rules! builtin_filters {
-    ($( $( #[ $attr:meta ] )* $name:literal : $method:ident),*) => {
-        pub fn default_filters() -> HashMap<String, Arc<Filter>> {
+    ($( $( #[ $attr:meta ] )* $name:literal : $method:path ; )*) => {
+        pub(crate) fn default_filters() -> HashMap<String, Arc<Filter>> {
             let mut res = HashMap::new();
             $(
                 $( #[ $attr ] )*
-                res.insert($name.into(), Arc::new(common::$method) as Arc<Filter>);
+                res.insert($name.into(), Arc::new($method) as Arc<Filter>);
             )*
             res
         }
@@ -17,25 +24,26 @@ macro_rules! builtin_filters {
 }
 
 builtin_filters! {
-    "require":require,
-    "default":default,
-    "length":length,
-    "lower":lower,
-    "upper":upper,
-    "trim":trim,
+    "require": common::require;
+    "default": common::default;
+    "length": common::length;
+    "lower": common::lower;
+    "upper": common::upper;
+    "trim": common::trim;
+    "split": common::split;
+    "index": common::index;
+    "join": common::join;
+    "string": common::string;
+    "key": common::key;
+    "escape_html": common::escape_html;
+    "e": common::escape_html;
+
     #[cfg(feature = "yaml-extension")]
-    "yaml":yaml,
+    "yaml": common::yaml;
     #[cfg(feature = "yaml-extension")]
-    "yml":yaml,
+    "yml": common::yaml;
     #[cfg(feature = "json-extension")]
-    "json":json,
-    "split":split,
-    "index":index,
+    "json": common::json;
     #[cfg(feature = "base64-extension")]
-    "base64":base64,
-    "join":join,
-    "string":string,
-    "key":key,
-    "escape_html":escape_html,
-    "e":escape_html
+    "base64": common::base64;
 }

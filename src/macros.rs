@@ -61,11 +61,11 @@ macro_rules! templar_filter {
                 match (left.into_result(), right.into_result()) {
                     (Err(e), _) | (_, Err(e)) => return e.into(),
                     (Ok(l), Ok(r)) => {
-                        let $left: $left_ty = match l {
+                        let mut $left: $left_ty = match l {
                             Document::$left_var(i) => i,
                             _ => return TemplarError::RenderFailure(format!("Expected {} for incoming filter data", stringify!($left_ty))).into(),
                         }.into();
-                        let $right: $right_ty = match r {
+                        let mut $right: $right_ty = match r {
                             Document::$right_var(i) => i,
                             _ => return TemplarError::RenderFailure(format!("Expected {} for filter args", stringify!($right_ty))).into(),
                         }.into();
