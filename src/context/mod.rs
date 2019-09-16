@@ -86,6 +86,7 @@ pub trait Context: Sized {
 #[derive(Debug)]
 pub enum ContextWrapper<'a> {
     Standard(&'a StandardContext),
+    #[cfg(feature = "shared-context")]
     Shared(&'a SharedContext),
     Scope(&'a ScopedContext<'a>),
 }
@@ -94,6 +95,7 @@ impl<'a> Context for ContextWrapper<'a> {
     fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
         match self {
             Self::Standard(c) => c.set_path_inner(path, doc),
+            #[cfg(feature = "shared-context")]
             Self::Shared(c) => c.set_path_inner(path, doc),
             Self::Scope(c) => c.set_path_inner(path, doc),
         }
@@ -102,6 +104,7 @@ impl<'a> Context for ContextWrapper<'a> {
     fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data {
         match self {
             Self::Standard(c) => c.get_path_inner(path, ctx),
+            #[cfg(feature = "shared-context")]
             Self::Shared(c) => c.get_path_inner(path, ctx),
             Self::Scope(c) => c.get_path_inner(path, ctx),
         }
@@ -110,6 +113,7 @@ impl<'a> Context for ContextWrapper<'a> {
     fn wrap(&self) -> ContextWrapper {
         match self {
             Self::Standard(c) => c.wrap(),
+            #[cfg(feature = "shared-context")]
             Self::Shared(c) => c.wrap(),
             Self::Scope(c) => c.wrap(),
         }

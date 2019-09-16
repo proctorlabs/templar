@@ -109,13 +109,16 @@ pub(crate) use execution::*;
 
 pub use {
     self::{
-        context::{Context, SharedContext, StandardContext},
+        context::{Context, StandardContext},
         error::TemplarError,
         execution::Data,
         templar::{Templar, TemplarBuilder, Template, TemplateTree},
     },
     unstructured::Document,
 };
+
+#[cfg(feature = "shared-context")]
+pub use context::SharedContext;
 
 pub mod error;
 
