@@ -15,6 +15,7 @@ OUTPUT_DIR = "target/${RUST_TARGET}/release/"
 TAR_FILENAME = "${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64_${TOOLCHAIN_SUFFIX}.tar.xz"
 TAR_PATH = "${OUTPUT_DIR}${TAR_FILENAME}"
 DEB_PATH = "target/${RUST_TARGET}/debian/${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64.deb"
+CRATE_DRY_RUN = ""
 
 [env.release-musl]
 RELEASE_ARG = "--release"
@@ -23,6 +24,7 @@ TOOLCHAIN_SUFFIX = "musl"
 OUTPUT_DIR = "target/${RUST_TARGET}/release/"
 TAR_FILENAME = "${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64_${TOOLCHAIN_SUFFIX}.tar.xz"
 TAR_PATH = "${OUTPUT_DIR}${TAR_FILENAME}"
+CRATE_DRY_RUN = ""
 
 # ---- Development ----
 [tasks.build]
@@ -37,7 +39,7 @@ args = ["run", "--features", "bin", "@@remove-empty(RELEASE_ARG)", "--", "${@}"]
 
 [tasks.in-docker]
 description = "Run this cargo make command in docker"
-script = ["docker run --rm -it -u $UID:$UID -v $PWD:/src -v ~/.config/hub:/src/.config/hub:ro -w /src ${DOCKER_BUILD_IMAGE} cargo make ${@}"]
+script = ["docker run --rm -it -u $UID:$UID -v $PWD:/src -v ~/.config/hub:/src/.config/hub:ro -v ~/.cargo/credentials:/src/.cargo/credentials:ro -w /src ${DOCKER_BUILD_IMAGE} cargo make ${@}"]
 
 [tasks.readme-dep-install]
 install_crate = "cargo-readme"

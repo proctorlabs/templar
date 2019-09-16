@@ -6,3 +6,4 @@ Cargo.lock
 # Other misc files
 .cache
 .config
+.cargo/credentials
