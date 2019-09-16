@@ -27,7 +27,7 @@ fn main() -> Result<(), TemplarError> {
     let template = templar.parse(TEMPLATE)?;
 
     // Create an empty context
-    let context = Context::new_standard(Document::Unit);
+    let context = StandardContext::new();
 
     // Render a template using the context creates
     println!("{}", template.render(&context)?);

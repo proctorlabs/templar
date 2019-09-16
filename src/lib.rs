@@ -109,7 +109,7 @@ pub(crate) use execution::*;
 
 pub use {
     self::{
-        context::Context,
+        context::{Context, SharedContext, StandardContext},
         error::TemplarError,
         execution::Data,
         templar::{Templar, TemplarBuilder, Template, TemplateTree},

@@ -32,7 +32,7 @@ impl Default for Node {
 }
 
 impl Node {
-    pub(crate) fn exec(&self, ctx: &Context) -> Data {
+    pub(crate) fn exec(&self, ctx: &impl Context) -> Data {
         match self {
             Self::Data(d) => d.clone(),
             Self::Operation(op) => op.exec(ctx),
@@ -88,7 +88,7 @@ impl Node {
         }
     }
 
-    pub fn render(&self, ctx: &Context) -> Result<String> {
+    pub fn render(&self, ctx: &impl Context) -> Result<String> {
         self.exec(ctx).render()
     }
 }

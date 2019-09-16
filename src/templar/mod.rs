@@ -24,10 +24,10 @@ lazy_static! {
 /// # Usage
 ///
 /// ```
-/// use templar::{Templar, Context};
+/// use templar::*;
 /// use unstructured::Document;
 ///
-/// let context = Context::new_standard(Document::Unit);
+/// let context = StandardContext::new();
 ///
 /// // parse and render a template, render returns a string
 /// let template = Templar::global().parse("This is a template with {{ 'an expression' }}")?;
@@ -59,11 +59,11 @@ impl Templar {
     /// Parse a `Template` or `TemplateTree` value.
     ///
     /// ```
-    /// # use templar::{Templar, Context, Template};
+    /// # use templar::*;
     /// # use unstructured::Document;
     /// # use std::convert::TryInto;
     ///
-    /// # let context = Context::new_standard(Document::Unit);
+    /// # let context = StandardContext::new();
     ///
     /// let template: Template = Templar::global().parse("{{ [5, 8, 3] | index(0) }}")?;
     /// assert_eq!(template.exec(&context)?, 5 as i64);
@@ -80,7 +80,7 @@ impl Templar {
     /// # Usage
     ///
     /// ```
-    /// # use templar::{Templar, Context, Template};
+    /// # use templar::*;
     /// # use unstructured::Document;
     /// # use std::convert::TryInto;
     ///
@@ -90,7 +90,7 @@ impl Templar {
     /// }
     /// "#;
     ///
-    /// # let context = Context::new_standard(Document::Unit);
+    /// # let context = StandardContext::new();
     ///
     /// let tree = Templar::global().parse_json(json_string)?;
     /// let template: Template = tree.get_path(&["key"]).try_into()?;
@@ -144,7 +144,7 @@ impl Parseable<Template> for &Document {
 impl Parseable<TemplateTree> for &Document {
     #[inline]
     fn parse_into(doc: Self, templar: &Templar) -> Result<TemplateTree> {
-        let default_context = Context::new_standard(Document::Unit);
+        let default_context = StandardContext::new();
         Ok(match doc {
             Document::Newtype(d) => templar.parse(d.as_ref())?,
             Document::Seq(s) => TemplateTree::Sequence(Arc::new(

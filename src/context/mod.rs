@@ -7,52 +7,26 @@ pub use dynamic::*;
 mod scoped;
 mod standard;
 
-use {scoped::ScopedContext, standard::StandardContext};
+pub(crate) use scoped::ScopedContext;
+pub use standard::StandardContext;
 
 #[cfg(feature = "shared-context")]
 mod shared;
 #[cfg(feature = "shared-context")]
-use shared::SharedContext;
+pub use shared::SharedContext;
 
-pub trait ContextDispatcher: Debug {
-    fn set_path(&self, path: &[&Document], doc: ContextMapValue) -> Result<()>;
-    fn get_path(&self, path: &[&Document], ctx: &Context) -> Data;
-}
-
-/// This is the context used for template rendering. It can hold either static or dynamic
-/// data.
-#[derive(Debug)]
-pub struct Context<'a> {
-    dispatcher: Box<dyn ContextDispatcher + 'a>,
-}
-
-impl<'a> Context<'a> {
-    /// Create a new scope for this context. Any new data set here will not affect the parent
-    /// context but will be available to all data rendered inside the scope.
-    pub(crate) fn create_scope(&'a self) -> Self {
-        Context {
-            dispatcher: Box::new(ScopedContext::new(&self.dispatcher)),
-        }
-    }
-
-    /// Create a new standard context. Use this when thread safety is not needed.
-    pub fn new_standard<T: Into<ContextMapValue>>(initial_value: T) -> Context<'static> {
-        Context {
-            dispatcher: Box::new(StandardContext::new(initial_value)),
-        }
-    }
-
-    /// Create a new shared context. This is a thread safe context.
-    #[cfg(feature = "shared-context")]
-    pub fn new_shared<T: Into<ContextMapValue>>(initial_value: T) -> Context<'static> {
-        Context {
-            dispatcher: Box::new(SharedContext::new(initial_value)),
-        }
-    }
+/// The primary context trait
+pub trait Context: Sized {
+    #[doc(hidden)]
+    fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()>;
+    #[doc(hidden)]
+    fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data;
+    #[doc(hidden)]
+    fn wrap(&self) -> ContextWrapper;
 
     /// Merge the data into the root context
     #[inline]
-    pub fn merge<T: Into<Document>>(&self, doc: T) -> Result<()> {
+    fn merge<T: Into<Document>>(&self, doc: T) -> Result<()> {
         match doc.into() {
             Document::Map(m) => {
                 for (k, v) in m.into_iter() {
@@ -69,7 +43,7 @@ impl<'a> Context<'a> {
 
     /// Merge the data into the context at the specified path
     #[inline]
-    pub fn merge_path<T>(&self, path: &[&Document], doc: T) -> Result<()>
+    fn merge_path<T>(&self, path: &[&Document], doc: T) -> Result<()>
     where
         Document: From<T>,
     {
@@ -80,25 +54,64 @@ impl<'a> Context<'a> {
 
     /// Set the root context value
     #[inline]
-    pub fn set<T: Into<ContextMapValue>>(&self, doc: T) -> Result<()> {
-        self.dispatcher.set_path(&[], doc.into())
+    fn set<T: Into<ContextMapValue>>(&self, doc: T) -> Result<()> {
+        self.set_path_inner(&[], doc.into())
+    }
+
+    /// Enter a new scope
+    #[inline]
+    fn create_scope(&self) -> ScopedContext {
+        ScopedContext::new(self.wrap())
     }
 
     /// Set the value at the specified path
     #[inline]
-    pub fn set_path<T: Into<ContextMapValue>>(&self, path: &[&Document], doc: T) -> Result<()> {
-        self.dispatcher.set_path(path, doc.into())
+    fn set_path<T: Into<ContextMapValue>>(&self, path: &[&Document], doc: T) -> Result<()> {
+        self.set_path_inner(path, doc.into())
     }
 
     /// Get the root context value
     #[inline]
-    pub fn get(&self) -> Data {
-        self.dispatcher.get_path(&[], &self)
+    fn get(&self) -> Data {
+        self.get_path_inner(&[], self)
     }
 
     /// Get the value at the path
     #[inline]
-    pub fn get_path(&self, path: &[&Document]) -> Data {
-        self.dispatcher.get_path(path, &self)
+    fn get_path(&self, path: &[&Document]) -> Data {
+        self.get_path_inner(path, self)
+    }
+}
+
+#[derive(Debug)]
+pub enum ContextWrapper<'a> {
+    Standard(&'a StandardContext),
+    Shared(&'a SharedContext),
+    Scope(&'a ScopedContext<'a>),
+}
+
+impl<'a> Context for ContextWrapper<'a> {
+    fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
+        match self {
+            Self::Standard(c) => c.set_path_inner(path, doc),
+            Self::Shared(c) => c.set_path_inner(path, doc),
+            Self::Scope(c) => c.set_path_inner(path, doc),
+        }
+    }
+
+    fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data {
+        match self {
+            Self::Standard(c) => c.get_path_inner(path, ctx),
+            Self::Shared(c) => c.get_path_inner(path, ctx),
+            Self::Scope(c) => c.get_path_inner(path, ctx),
+        }
+    }
+
+    fn wrap(&self) -> ContextWrapper {
+        match self {
+            Self::Standard(c) => c.wrap(),
+            Self::Shared(c) => c.wrap(),
+            Self::Scope(c) => c.wrap(),
+        }
     }
 }

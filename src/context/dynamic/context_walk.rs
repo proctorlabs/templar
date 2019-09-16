@@ -5,7 +5,7 @@ pub struct ContextWalk<'a> {
 }
 
 impl<'a> ContextWalk<'a> {
-    pub fn exec(&self, ctx: &Context) -> Data {
+    pub fn exec(&self, ctx: &impl Context) -> Data {
         let val = &*self.inner.borrow();
         match val {
             ContextWalkValue::None => Data::empty(),
@@ -14,7 +14,7 @@ impl<'a> ContextWalk<'a> {
         }
     }
 
-    pub fn walk(&'a self, ctx: &Context, key: &Document) {
+    pub fn walk(&'a self, ctx: &impl Context, key: &Document) {
         let val = self.inner.borrow();
         let mut new_walk = None;
         let mut res = None;

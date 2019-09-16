@@ -1,21 +1,33 @@
 use super::*;
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
+/// A single-threaded context
 #[derive(Debug, Clone)]
 pub struct StandardContext(Rc<RefCell<ContextMap>>);
 
-impl StandardContext {
-    pub fn new<T: Into<ContextMapValue>>(initial_value: T) -> Self {
-        StandardContext(Rc::new(RefCell::new(ContextMap::new(initial_value))))
+impl Default for StandardContext {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
-impl ContextDispatcher for StandardContext {
-    fn set_path(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
+impl StandardContext {
+    /// Create a new empty standard context
+    pub fn new() -> Self {
+        StandardContext(Rc::new(RefCell::new(ContextMap::new(Document::Unit))))
+    }
+}
+
+impl Context for StandardContext {
+    fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
         self.0.borrow_mut().set(doc, path)
     }
 
-    fn get_path(&self, path: &[&Document], ctx: &Context) -> Data {
+    fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data {
         self.0.borrow().exec(ctx, path)
+    }
+
+    fn wrap(&self) -> ContextWrapper {
+        ContextWrapper::Standard(self)
     }
 }

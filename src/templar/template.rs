@@ -16,15 +16,15 @@ impl Template {
     /// ```
     /// # use templar::*;
     /// # use unstructured::Document;
-    /// # let context = Context::new_standard(Document::Unit);
+    /// # let context = StandardContext::new();
     ///
     /// let t = Templar::global().parse_expression("5 + 5")?;
     /// assert_eq!(t.render(&context)?, "10");
     /// # Ok::<(), templar::TemplarError>(())
     /// ```
-    pub fn render(&self, ctx: &Context) -> Result<String> {
-        let local_ctx = ctx.create_scope();
-        self.0.render(&local_ctx)
+    pub fn render(&self, ctx: &impl Context) -> Result<String> {
+        //let local_ctx = ctx.create_scope();
+        self.0.render(ctx)
     }
 
     /// Execute a template, getting a `Document` from the `unstructured` crate as a result.
@@ -36,15 +36,15 @@ impl Template {
     /// ```
     /// # use templar::*;
     /// # use unstructured::Document;
-    /// # let context = Context::new_standard(Document::Unit);
+    /// # let context = StandardContext::new();
     ///
     /// let t = Templar::global().parse_expression("5 + 5")?;
     /// assert_eq!(t.exec(&context)?, 10i64);
     /// # Ok::<(), templar::TemplarError>(())
     /// ```
-    pub fn exec(&self, ctx: &Context) -> Result<Document> {
-        let local_ctx = ctx.create_scope();
-        self.0.exec(&local_ctx).into_result()
+    pub fn exec(&self, ctx: &impl Context) -> Result<Document> {
+        //let local_ctx = ctx.create_scope();
+        self.0.exec(ctx).into_result()
     }
 
     pub(crate) fn root_node(&self) -> Arc<Node> {

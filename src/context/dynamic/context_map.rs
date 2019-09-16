@@ -37,7 +37,7 @@ impl ContextMap {
         Ok(())
     }
 
-    pub fn exec(&self, ctx: &Context, path: &[&Document]) -> Data {
+    pub fn exec(&self, ctx: &impl Context, path: &[&Document]) -> Data {
         if path.is_empty() {
             let copy = ContextMapValue::Map(self.root.clone());
             return copy.exec(ctx);
@@ -92,7 +92,7 @@ impl ContextMapValue {
         }
     }
 
-    pub fn exec(&self, ctx: &Context) -> Data {
+    pub fn exec(&self, ctx: &impl Context) -> Data {
         match self {
             ContextMapValue::Node(node) => node.exec(ctx),
             ContextMapValue::Map(map) => {

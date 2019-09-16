@@ -38,14 +38,15 @@ fn parse_file(path: &PathBuf) -> Result<Document> {
     Ok(match &ext as &str {
         "js" | "json" => serde_json::from_str(&contents).wrap()?,
         "yml" | "yaml" => serde_yaml::from_str(&contents).wrap()?,
-        "xml" => serde_xml_rs::from_str(&contents).wrap()?,
+        "xml" => serde_xml_rs::from_str(&contents)
+            .map_err(|e| TemplarError::RenderFailure(format!("{:?}", e)))?,
         "toml" => toml::from_str(&contents).wrap()?,
         _ => serde_json::from_str(&contents).wrap()?,
     })
 }
 
-fn build_context(options: &Options) -> Result<Context> {
-    let ctx = Context::new_standard(Document::Unit);
+fn build_context(options: &Options) -> Result<StandardContext> {
+    let ctx = StandardContext::new();
     for file in options.input.iter() {
         ctx.merge(parse_file(file)?)?;
     }

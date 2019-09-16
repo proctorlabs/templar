@@ -10,7 +10,8 @@ somedict:
 #[test]
 fn run_dynamic_context() -> Result<()> {
     let template = Templar::global().parse_yaml(DYN_CONTEXT)?;
-    let context = Context::new_standard(template);
+    let context = StandardContext::new();
+    context.set(template)?;
     let tmpl: Template = Templar::global().parse_template("{{ somedict.dynamic }}")?;
     let result = tmpl.render(&context)?;
     assert_eq!(result, "VALUE".to_string());
@@ -20,7 +21,8 @@ fn run_dynamic_context() -> Result<()> {
 #[test]
 fn run_dynamic_context_new_value() -> Result<()> {
     let template = Templar::global().parse_yaml(DYN_CONTEXT)?;
-    let context = Context::new_standard(template);
+    let context = StandardContext::new();
+    context.set(template)?;
     let tmpl: Template = Templar::global()
         .parse_template("{{ one.two.three = 'HELLO!!' }}{{ somedict.unknown }}")?;
     let result = tmpl.render(&context)?;

@@ -17,8 +17,9 @@ impl fmt::Debug for Operation {
 }
 
 impl Operation {
-    pub(crate) fn exec(&self, ctx: &Context) -> Data {
-        Executor::exec(&self.oper, ctx, &self.nodes)
+    pub(crate) fn exec(&self, ctx: &impl Context) -> Data {
+        let wrapper = ctx.wrap();
+        Executor::exec(&self.oper, &wrapper, &self.nodes)
     }
 
     pub(crate) fn from_filter(mut name: String, ex: FilterExecutor, nodes: Vec<Node>) -> Self {
@@ -91,7 +92,7 @@ map_operations! {
 macro_rules! simple_pipe {
     ( $( $pipe_name:ident ( $l:ident , $r:ident ) -> { $( $tail:tt )* } ; )* ) => {
         $(
-            fn $pipe_name(ctx: & Context, left: &Node, right: &Node) -> Data {
+            fn $pipe_name(ctx: &ContextWrapper, left: &Node, right: &Node) -> Data {
                 match (data_unwrap!(left.exec(ctx)), data_unwrap!(right.exec(ctx))) {
                     ($l, $r) => Data::from( $( $tail )* ),
                 }
@@ -128,7 +129,7 @@ simple_pipe! {
     less_than_equals(l, r) -> { l <= r };
 }
 
-fn if_then(ctx: &Context, cnd: &Node, p: &Node, n: &Node) -> Data {
+fn if_then(ctx: &ContextWrapper, cnd: &Node, p: &Node, n: &Node) -> Data {
     let cnd = cnd.exec(ctx).into_result();
     match cnd {
         Ok(Document::Bool(true)) => p.exec(ctx),
@@ -138,7 +139,7 @@ fn if_then(ctx: &Context, cnd: &Node, p: &Node, n: &Node) -> Data {
     }
 }
 
-fn concat(ctx: &Context, input: &[Node]) -> Data {
+fn concat(ctx: &ContextWrapper, input: &[Node]) -> Data {
     let results: Result<Vec<String>> = input.iter().map(|node| Ok(node.render(ctx)?)).collect();
     match results {
         Ok(result) => result
@@ -152,7 +153,7 @@ fn concat(ctx: &Context, input: &[Node]) -> Data {
     }
 }
 
-fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> Data {
+fn for_loop(ctx: &ContextWrapper, val_name: &Node, array_path: &Node, exec: &Node) -> Data {
     // Get the result for the value we're iterating over
     let array_exec = array_path.exec(ctx).into_result();
     if let Err(e) = array_exec {
@@ -211,7 +212,7 @@ fn for_loop(ctx: &Context, val_name: &Node, array_path: &Node, exec: &Node) -> D
     }
 }
 
-fn set(ctx: &Context, left: &Node, right: &Node) -> Data {
+fn set(ctx: &ContextWrapper, left: &Node, right: &Node) -> Data {
     let val = right.exec(ctx).into_result();
     match (left, val) {
         (_, Err(e)) => e.into(),

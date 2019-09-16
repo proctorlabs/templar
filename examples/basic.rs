@@ -15,7 +15,8 @@ fn main() -> Result<(), TemplarError> {
     let mut data: Document = Document::default();
     data["some"]["string"] = "Hello World!".into();
     data["some"]["number"] = 42i64.into();
-    let context = Context::new_standard(data);
+    let context = StandardContext::new();
+    context.set(data)?;
 
     // Render a template using the context creates
     println!("{}", template.render(&context)?);

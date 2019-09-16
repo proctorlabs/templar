@@ -22,7 +22,7 @@ pub enum TemplarError {
     /// An I/O error occurred
     IO(String),
     /// Some other error, check the inner value
-    Other(Arc<Box<dyn Error>>),
+    Other(Arc<Box<dyn Error + Send + Sync>>),
 }
 
 impl fmt::Display for TemplarError {
@@ -52,8 +52,8 @@ impl Error for TemplarError {}
 /// Result type for all Templar methods
 pub type Result<T> = std::result::Result<T, TemplarError>;
 
-impl From<Box<dyn Error>> for TemplarError {
-    fn from(e: Box<dyn Error>) -> TemplarError {
+impl From<Box<dyn Error + Send + Sync>> for TemplarError {
+    fn from(e: Box<dyn Error + Send + Sync>) -> TemplarError {
         TemplarError::Other(Arc::new(e))
     }
 }
@@ -66,7 +66,7 @@ pub trait ResultMap<U> {
 
 impl<U, T> ResultMap<U> for std::result::Result<U, T>
 where
-    T: std::error::Error + Into<Box<dyn Error>>,
+    T: std::error::Error + Into<Box<dyn Error + Send + Sync>>,
 {
     fn wrap(self) -> Result<U> {
         self.map_err(|e| TemplarError::Other(Arc::new(e.into())))
