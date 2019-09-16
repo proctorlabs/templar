@@ -1,14 +1,13 @@
-/*!
-Templar filters
+# Templar filters
 
 Filters are used to process the result of an expression in a template.
 
-# Overview
+## Overview
 
 As an example, the expression `{{ 'hello' | upper }}` uses the "upper" filter to create
 the upper case result "HELLO".
 
-# Built in filters
+## Built in filters
 
 - require: Will throw an error if the result is empty or null
 - default(any): Replaces empty, null, or error types with the default value from the args
@@ -25,50 +24,3 @@ the upper case result "HELLO".
 - yaml: (alias yml) Serialize the data into a YAML string. Requires"yaml-extension" feature (default on)
 - json(str?): Serialize the data into a JSON string. Set str to 'pretty' to print with indentation. Requires the "json-extension" feature (default on)
 - base64(str?): Encode the result as Base64. If the optional string parameter is set to "decode" then it will try to decode instead. Requires "base64-extension" feature (default on)
-*/
-
-mod common;
-
-use crate::*;
-use std::collections::HashMap;
-
-/// This is the definition used when adding filters to Templar
-pub type Filter = dyn Fn(Data, Data) -> Data + Send + Sync;
-
-macro_rules! builtin_filters {
-    ($( $( #[ $attr:meta ] )* $name:literal : $method:path ; )*) => {
-        pub(crate) fn default_filters() -> HashMap<String, Arc<Filter>> {
-            let mut res = HashMap::new();
-            $(
-                $( #[ $attr ] )*
-                res.insert($name.into(), Arc::new($method) as Arc<Filter>);
-            )*
-            res
-        }
-    };
-}
-
-builtin_filters! {
-    "require": common::require;
-    "default": common::default;
-    "length": common::length;
-    "lower": common::lower;
-    "upper": common::upper;
-    "trim": common::trim;
-    "split": common::split;
-    "index": common::index;
-    "join": common::join;
-    "string": common::string;
-    "key": common::key;
-    "escape_html": common::escape_html;
-    "e": common::escape_html;
-
-    #[cfg(feature = "yaml-extension")]
-    "yaml": common::yaml;
-    #[cfg(feature = "yaml-extension")]
-    "yml": common::yaml;
-    #[cfg(feature = "json-extension")]
-    "json": common::json;
-    #[cfg(feature = "base64-extension")]
-    "base64": common::base64;
-}

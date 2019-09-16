@@ -49,7 +49,9 @@ private = true
 description = "Update documentation"
 script = [
     "cargo readme -t .ci/readme.tpl -i src/lib.rs -o README.md",
-    "cargo readme -t .ci/doc.tpl -i src/main.rs -o docs/CLI.md"
+    "cargo readme -t .ci/doc.tpl -i src/main.rs -o docs/CLI.md",
+    "cargo readme -t .ci/doc.tpl -i src/filters/mod.rs -o docs/filters.md",
+    "cargo readme -t .ci/doc.tpl -i src/functions/mod.rs -o docs/functions.md"
 ]
 dependencies = ["readme-dep-install"]
 

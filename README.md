@@ -79,7 +79,7 @@ Everything inside the standard `{{ }}` block is an expression. Each block holds 
 many individual operations. A quick overview:
 
 * Math operations: `+ - * / %` these operations are only valid with numeric types
-* Conditionals: `== != < <= > >= && ||`
+* Equality: `== != < <= > >= && ||`
 * Value setting: `=` the left side of this operation must be some identifier e.g. `{{ some.val.path = 'hello world!' }}`
 * String concatenation: `~` e.g. `{{ 'Hello' ~ ' ' ~ 'world!' }}` prints "Hello world!"
 * Functions: `ident()` e.g. `{{ env('USER') }}` would retrieve the value of the environment variable "USER".
