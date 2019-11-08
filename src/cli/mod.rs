@@ -47,6 +47,11 @@ fn parse_file(path: &PathBuf) -> Result<Document> {
 
 fn build_context(options: &Options) -> Result<StandardContext> {
     let ctx = StandardContext::new();
+    for file in options.dynamic_input.iter() {
+        let doc = parse_file(file)?;
+        let tree: TemplateTree = Templar::global().parse(&doc)?;
+        ctx.set(tree)?;
+    }
     for file in options.input.iter() {
         ctx.merge(parse_file(file)?)?;
     }

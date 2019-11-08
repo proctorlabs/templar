@@ -24,6 +24,7 @@ pub enum Command {
         #[structopt(flatten)]
         options: Options,
     },
+
     #[structopt(
         rename_all = "kebab_case", 
         settings = &[UnifiedHelpMessage]
@@ -52,6 +53,16 @@ pub struct Options {
     /// File to parse and load into the templating context
     #[structopt(short, long, number_of_values = 1, multiple = true)]
     pub input: Vec<PathBuf>,
+
+    /// File to parse and load into the templating context as a dynamic input
+    #[structopt(
+        short,
+        long = "dynamic",
+        name = "dynamic",
+        number_of_values = 1,
+        multiple = true
+    )]
+    pub dynamic_input: Vec<PathBuf>,
 
     /// Output to send the result to, defaults to stdout
     #[structopt(short, long, parse(from_os_str))]
