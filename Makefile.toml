@@ -1,45 +1,48 @@
 # ---- Profiles ----
 [env]
-BIN_NAME = "${CARGO_MAKE_CRATE_NAME}"
-LOCAL_INSTALL_DIR = "/usr/local/bin/"
-RELEASE_TAG = "v${CARGO_MAKE_CRATE_VERSION}"
-RELEASE_TITLE = "Templar ${RELEASE_TAG}"
+BUILD_DIR = "target/"
+LIB_NAME = "${CARGO_MAKE_CRATE_NAME}"
+BIN_NAME = "${CARGO_MAKE_CRATE_FS_NAME}"
+BIN_VERSION = "${CARGO_MAKE_CRATE_VERSION}"
+BUILD_ARGS = "--target-dir ${BUILD_DIR} --features bin"
 DOCKER_BUILD_IMAGE = "proctorlabs/rust-builder"
-CRATE_DRY_RUN = "--dry-run"
+OUTPUT_DIR = "${BUILD_DIR}/debug/"
+PACKAGE_DIR = "target/packages/"
 
-[env.release-libc]
-RELEASE_ARG = "--release"
+[env.libc]
+BUILD_TAR = true
+BUILD_DEB = true
+PUBLISH_CRATE = false
 RUST_TARGET = "x86_64-unknown-linux-gnu"
-TOOLCHAIN_SUFFIX = "libc"
-OUTPUT_DIR = "target/${RUST_TARGET}/release/"
-TAR_FILENAME = "${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64_${TOOLCHAIN_SUFFIX}.tar.xz"
-TAR_PATH = "${OUTPUT_DIR}${TAR_FILENAME}"
-DEB_PATH = "target/${RUST_TARGET}/debian/${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64.deb"
-CRATE_DRY_RUN = ""
+PACKAGE_SUFFIX = "amd64-libc"
+PACKAGE_BASENAME = "${BIN_NAME}-${BIN_VERSION}-${PACKAGE_SUFFIX}"
+BUILD_ARGS = "--target ${RUST_TARGET} --release --features bin"
+OUTPUT_DIR = "${BUILD_DIR}/${RUST_TARGET}/release/"
 
-[env.release-musl]
-RELEASE_ARG = "--release"
+[env.musl]
+BUILD_TAR = true
+BUILD_DEB = true
+PUBLISH_CRATE = false
 RUST_TARGET = "x86_64-unknown-linux-musl"
-TOOLCHAIN_SUFFIX = "musl"
-OUTPUT_DIR = "target/${RUST_TARGET}/release/"
-TAR_FILENAME = "${BIN_NAME}_${CARGO_MAKE_CRATE_VERSION}_amd64_${TOOLCHAIN_SUFFIX}.tar.xz"
-TAR_PATH = "${OUTPUT_DIR}${TAR_FILENAME}"
-CRATE_DRY_RUN = ""
+PACKAGE_SUFFIX = "amd64-musl"
+PACKAGE_BASENAME = "${BIN_NAME}-${BIN_VERSION}-${PACKAGE_SUFFIX}"
+BUILD_ARGS = "--target ${RUST_TARGET} --release --features bin"
+OUTPUT_DIR = "${BUILD_DIR}/${RUST_TARGET}/release/"
 
 # ---- Development ----
 [tasks.build]
 description = "Build project"
 command = "cargo"
-args = ["build", "--features", "bin", "--target", "${RUST_TARGET}", "--bin", "templar", "@@remove-empty(RELEASE_ARG)"]
+args = ["build", "--all-targets", "@@split(BUILD_ARGS, )"]
 
 [tasks.run]
 description = "Run project"
 command = "cargo"
-args = ["run", "--features", "bin", "@@remove-empty(RELEASE_ARG)", "--", "${@}"]
+args = ["run", "@@split(BUILD_ARGS, )", "--", "${@}"]
 
 [tasks.in-docker]
 description = "Run this cargo make command in docker"
-script = ["docker run --rm -it -u $UID:$UID -v $PWD:/src -v ~/.config/hub:/src/.config/hub:ro -v ~/.cargo/credentials:/src/.cargo/credentials:ro -w /src ${DOCKER_BUILD_IMAGE} cargo make ${@}"]
+script = ["docker run --rm -it -u $UID:$UID -v $PWD:/src -v ~/.cargo/credentials:/src/.cargo/credentials:ro -w /src ${DOCKER_BUILD_IMAGE} cargo make ${@}"]
 
 [tasks.readme-dep-install]
 install_crate = "cargo-readme"
@@ -49,93 +52,92 @@ private = true
 
 [tasks.readme]
 description = "Update documentation"
-script = [
-    "cargo readme -t .ci/readme.tpl -i src/lib.rs -o README.md",
-    "cargo readme -t .ci/doc.tpl -i src/main.rs -o docs/CLI.md",
-    "cargo readme -t .ci/doc.tpl -i src/filters/mod.rs -o docs/filters.md",
-    "cargo readme -t .ci/doc.tpl -i src/functions/mod.rs -o docs/functions.md"
-]
+script = []
 dependencies = ["readme-dep-install"]
 
 [tasks.validate]
 description = "Ensure project is cleaned up and has no warnings"
+install_crate = { rustup_component_name = "rustfmt" }
 script = [
-    "cargo verify-project > /dev/null",
-    "cargo fmt",
-    "cargo check",
-    "cargo clippy",
-    "cargo build",
     "cargo test --all-features",
     "cargo build --no-default-features"
 ]
+dependencies = ["verify-project", "format", "check", "clippy", "build", "test"]
 
 # ---- Install from source ----
 [tasks.install]
-description = "Install templar locally from source"
-script = [
-    "cd ${OUTPUT_DIR}",
-    "strip ${BIN_NAME}",
-    "sudo cp ${BIN_NAME} ${LOCAL_INSTALL_DIR}${BIN_NAME}"
-]
+description = "Install locally from source"
+script = ["cargo install --bins --path ."]
 dependencies = ["build"]
 
 [tasks.uninstall]
-description = "Delete local templar install"
-script = ["sudo rm ${LOCAL_INSTALL_DIR}${BIN_NAME}"]
+description = "Delete local install"
+script = ["cargo uninstall"]
 
 # ---- Packaging ----
 [tasks.package-deb]
-condition = { env_set = ["DEB_PATH"], platforms = ["linux"] }
+condition = { env_true = ["BUILD_DEB"] }
 description = "Create debian package"
 install_crate = "cargo-deb"
 command = "cargo"
-args = ["deb", "--target", "${RUST_TARGET}", "--no-build"]
+args = ["deb", "--target", "${RUST_TARGET}", "--no-build", "-o", "${PACKAGE_DIR}${PACKAGE_BASENAME}.deb"]
 dependencies = ["build"]
 
 [tasks.package-tar]
-condition = { env_set = ["TAR_FILENAME"] }
+condition = { env_true = ["BUILD_TAR"] }
 description = "Create tar package"
 script = [
-    "cd ${OUTPUT_DIR}",
-    "strip ${BIN_NAME}",
-    "tar -cvJf ${TAR_FILENAME} ${BIN_NAME}"
+'''
+#!/usr/bin/env bash
+pushd ${OUTPUT_DIR}
+strip ${BIN_NAME}
+tar -cvJf ${PACKAGE_BASENAME}.tar.xz ${BIN_NAME}
+popd
+mkdir -p ${PACKAGE_DIR}
+mv ${OUTPUT_DIR}${PACKAGE_BASENAME}.tar.xz ${PACKAGE_DIR}
+'''
 ]
+shell = "bash"
 dependencies = ["build"]
 
-# ---- Publishing ----
-[tasks.publish-draft]
-condition = { env_set = ["RELEASE_ARG"] }
-description = "Create a github release draft"
-command = "hub"
-args = ["release", "create", "-d", "-m", "${RELEASE_TITLE}", "${RELEASE_TAG}"]
+[tasks.packages]
+description = "Create all packages"
+dependencies = ["package-tar", "package-deb"]
 
-[tasks.publish-tar]
-condition = { env_set = ["RELEASE_ARG", "TAR_FILENAME"] }
-description = "Release tar package"
-command = "hub"
-args = ["release", "edit", "-m", "", "-a", "${TAR_PATH}", "${RELEASE_TAG}"]
-dependencies = ["package-tar"]
-
-[tasks.publish-deb]
-condition = { env_set = ["RELEASE_ARG", "DEB_PATH"], platforms = ["linux"] }
-description = "Release tar package"
-command = "hub"
-args = ["release", "edit", "-m", "", "-a", "${DEB_PATH}", "${RELEASE_TAG}"]
-dependencies = ["package-deb"]
+# ---- Release Management ----
+[tasks.validate-release]
+description = "Verify and push tag for new release"
+script = [
+'''
+#!/usr/bin/env bash
+set -Eeou pipefail
+if [[ $(git diff --stat) != '' ]]; then
+  echo 'Working tree dirty, aborting'
+  exit 1
+fi
+'''
+]
+dependencies = ["validate"]
 
 [tasks.publish-crate]
-condition = { env_set = ["RELEASE_ARG"] }
-description = "Release new crate"
+condition = { env_true = ["PUBLISH_CRATE"] }
+description = "Publish crate"
 command = "cargo"
-args = ["publish", "--all-features", "@@remove-empty(CRATE_DRY_RUN)"]
+args = ["publish", "--all-features", "--token", "${CRATE_KEY}"]
+dependencies = ["validate-release"]
 
-[tasks.publish-all]
-description = "Publish a new release"
+[tasks.mark-release]
+description = "Verify and push tag for new release"
 script = [
-    "cargo make -p release-libc publish-draft",
-    "cargo make -p release-musl publish-tar",
-    "cargo make -p release-musl publish-deb",
-    "cargo make -p release-libc publish-tar",
-    "cargo make -p release-libc publish-deb",
-    "cargo make -p release-libc publish-crate"
+'''
+#!/usr/bin/env bash
+set -Eeou pipefail
+git tag v${BIN_VERSION}
+git push origin refs/tags/v${BIN_VERSION}
+'''
 ]
+dependencies = ["validate-release"]
+
+[tasks.do-release]
+description = "Complete release flow"
+dependencies = ["validate-release", "packages", "publish-crate"]

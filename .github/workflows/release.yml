@@ -1,0 +1,37 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v**"
+jobs:
+  release_packages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: Build packages for libc target
+        uses: proctorlabs/rust-builder/make@master
+        env:
+          CRATE_KEY: ${{ secrets.CRATE_KEY }}
+        with:
+          action: "do-release"
+          profile: "libc"
+      - name: Build packages for musl target
+        uses: proctorlabs/rust-builder/make@master
+        with:
+          action: "do-release"
+          profile: "musl"
+      - name: Upload artifacts to this build
+        uses: actions/upload-artifact@master
+        with:
+          name: packages
+          path: target/packages/
+      - name: Create a release with artifacts
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: Release
+          files: |
+            target/packages/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

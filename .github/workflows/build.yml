@@ -1,0 +1,13 @@
+name: Build Project
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: Build packages for libc target
+        uses: proctorlabs/rust-builder/make@master
+        with:
+          action: "build"
+          profile: "libc"
