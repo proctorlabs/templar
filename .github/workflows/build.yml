@@ -1,13 +1,18 @@
-name: Build Project
+name: Primary Build
 on: push
+
 jobs:
   build:
+    name: Build Templar
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v1
-      - name: Build packages for libc target
-        uses: proctorlabs/rust-builder/make@master
+        uses: actions/checkout@v2
+
+      - name: Use stable toolchain
+        uses: actions-rs/toolchain@v1
         with:
-          action: "build"
-          profile: "libc"
+          toolchain: stable
+
+      - name: Build binary
+        run: cargo build --release --all-features

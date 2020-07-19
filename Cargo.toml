@@ -3,7 +3,7 @@ name = "templar"
 authors = ["Phil Proctor <philliptproctor@gmail.com>"]
 description = "Lightweight yet powerful templating"
 documentation = "https://docs.rs/templar"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2018"
 repository = "https://github.com/proctorlabs/templar"
 keywords = ["cli", "template", "templating", "handlebars", "jinja"]
@@ -14,7 +14,7 @@ exclude = [".ci/**", "docs/**"]
 
 [package.metadata.deb]
 maintainer = "Phil Proctor <philliptproctor@gmail.com>"
-copyright = "2019, templar development team"
+copyright = "2020, templar development team"
 license-file = ["LICENSE", "5"]
 extended-description = """\
 Templar is a command for processing template files with \
@@ -36,11 +36,11 @@ serde = { version = "1.0", optional = true, features = ["derive"] }
 serde_yaml = { version ="0.8", optional = true }
 serde_json = { version ="1.0", optional = true }
 toml = { version = "0.5", optional = true }
-serde-xml-rs = { version = "0.3", optional = true }
+serde-xml-rs = { version = "0.4", optional = true }
 
 # Misc optionals
-parking_lot = { version = "0.9", optional = true }
-base64 = { version = "0.11", optional = true }
+parking_lot = { version = "0.11", optional = true }
+base64 = { version = "0.12", optional = true }
 
 # Binary deps
 clap = { version = "2.33", optional = true }
