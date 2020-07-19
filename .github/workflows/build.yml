@@ -4,15 +4,33 @@ on: push
 jobs:
   build:
     name: Build Templar
-    runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-gnu
-          - aarch64-unknown-linux-musl
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            use-cross: no
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            use-cross: yes
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            use-cross: yes
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            use-cross: yes
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+            use-cross: yes
+          - os: windows-latest
+            target: x86_64-pc-windows-gnu
+            use-cross: no
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            use-cross: no
+
+    runs-on: '${{ matrix.os }}'
 
     steps:
       - name: Checkout code
@@ -32,6 +50,6 @@ jobs:
       - name: 'Build binary for ${{ matrix.target }}'
         uses: actions-rs/cargo@v1
         with:
-          use_cross: true
+          use-cross: ${{ matrix.use-cross }}
           command: build
           args: '--release --all-features --target  ${{ matrix.target }}'
