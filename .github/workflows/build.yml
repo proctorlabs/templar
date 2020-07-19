@@ -10,25 +10,32 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            use-cross: no
+            use-cross: false
+            use-deb: true
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            use-cross: yes
+            use-cross: true
+            use-deb: true
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            use-cross: yes
+            use-cross: true
+            use-deb: true
           - os: ubuntu-latest
             target: aarch64-unknown-linux-musl
-            use-cross: yes
+            use-cross: true
+            use-deb: true
           - os: ubuntu-latest
             target: armv7-unknown-linux-gnueabihf
-            use-cross: yes
+            use-cross: true
+            use-deb: true
           - os: windows-latest
             target: x86_64-pc-windows-gnu
-            use-cross: no
+            use-cross: false
+            use-deb: true
           - os: macos-latest
             target: x86_64-apple-darwin
-            use-cross: no
+            use-cross: false
+            use-deb: true
 
     runs-on: '${{ matrix.os }}'
 
@@ -42,6 +49,7 @@ jobs:
           toolchain: stable
 
       - name: Install cargo-deb
+        if: ${{ matrix.use-deb }}
         uses: actions-rs/cargo@v1
         with:
           command: install
