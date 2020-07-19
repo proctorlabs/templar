@@ -5,6 +5,15 @@ jobs:
   build:
     name: Build Templar
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-gnu
+          - aarch64-unknown-linux-musl
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -14,5 +23,15 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Build binary
-        run: cargo build --release --all-features
+      - name: Install cargo-deb
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-deb
+
+      - name: 'Build binary for ${{ matrix.target }}'
+        uses: actions-rs/cargo@v1
+        with:
+          use_cross: true
+          command: build
+          args: '--release --all-features --target  ${{ matrix.target }}'
