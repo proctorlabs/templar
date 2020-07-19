@@ -9,33 +9,40 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+            toolchain: stable
             target: x86_64-unknown-linux-gnu
             use-cross: false
             use-deb: true
           - os: ubuntu-latest
+            toolchain: stable
             target: x86_64-unknown-linux-musl
             use-cross: true
             use-deb: true
           - os: ubuntu-latest
+            toolchain: stable
             target: aarch64-unknown-linux-gnu
             use-cross: true
             use-deb: true
           - os: ubuntu-latest
+            toolchain: stable
             target: aarch64-unknown-linux-musl
             use-cross: true
             use-deb: true
           - os: ubuntu-latest
+            toolchain: stable
             target: armv7-unknown-linux-gnueabihf
             use-cross: true
             use-deb: true
           - os: windows-latest
+            toolchain: stable-msvc
             target: x86_64-pc-windows-gnu
             use-cross: false
-            use-deb: true
+            use-deb: false
           - os: macos-latest
+            toolchain: stable
             target: x86_64-apple-darwin
             use-cross: false
-            use-deb: true
+            use-deb: false
 
     runs-on: '${{ matrix.os }}'
 
