@@ -98,7 +98,7 @@ jobs:
         with:
           use-cross: ${{ matrix.use-cross }}
           command: strip
-          args: '--target ${{ matrix.target }} --release'
+          args: '--target ${{ matrix.target }}'
 
       - name: Create tar.xz package
         if: matrix.tar-xz
