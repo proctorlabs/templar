@@ -31,6 +31,7 @@ _validate:
     # Other stuff
     cargo install cargo-deb
     cargo install cargo-readme
+    cargo install cargo-strip
 
 build:
     cargo build --features bin
@@ -38,14 +39,14 @@ build:
 build-release:
     #!/usr/bin/env bash
     set -Eeou pipefail
-    echo '{{ target }}'
+    echo 'Building for {{ target }}'
     cargo build --features bin --release --target '{{ target }}'
 
 package-tar: build-release
     #!/usr/bin/env bash
     set -Eeou pipefail
     mkdir -p '{{ package_dir }}'
-    strip '{{ build_dir }}/{{ bin_name }}'
+    cargo strip --target '{{ target }}'
     tar -C '{{ build_dir }}' -cvJf '{{ package_dir }}/{{ bin_name }}-{{ target }}.tar.xz' '{{ bin_name }}'
 
 package-deb: build-release
