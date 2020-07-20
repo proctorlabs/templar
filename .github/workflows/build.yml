@@ -65,8 +65,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.use-cross }}
-          command: install
-          args: '--all-features --path . --root . --target ${{ matrix.target }}'
+          command: build
+          args: '--all-features --target ${{ matrix.target }}'
 
       - name: 'Run tests for ${{ matrix.target }}'
         uses: actions-rs/cargo@v1
@@ -80,4 +80,4 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: binary
-          path: bin/templar
+          path: target/
