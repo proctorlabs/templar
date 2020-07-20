@@ -8,9 +8,9 @@ edition = "2018"
 repository = "https://github.com/proctorlabs/templar"
 keywords = ["cli", "template", "templating", "handlebars", "jinja"]
 categories = ["template-engine"]
-license = "MIT"
+license = "MIT/Apache-2.0"
 readme = "README.md"
-exclude = [".ci/**", "docs/**"]
+exclude = [".github/**", "docs/**"]
 
 [package.metadata.deb]
 maintainer = "Phil Proctor <philliptproctor@gmail.com>"

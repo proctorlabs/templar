@@ -12,34 +12,42 @@ jobs:
             toolchain: stable
             target: x86_64-unknown-linux-gnu
             use-cross: false
+            run-tests: true
           - os: ubuntu-latest
             toolchain: stable
             target: x86_64-unknown-linux-musl
             use-cross: true
+            run-tests: false
           - os: ubuntu-latest
             toolchain: stable
             target: aarch64-unknown-linux-gnu
             use-cross: true
+            run-tests: false
           - os: ubuntu-latest
             toolchain: stable
             target: aarch64-unknown-linux-musl
             use-cross: true
+            run-tests: false
           - os: ubuntu-latest
             toolchain: stable
             target: armv7-unknown-linux-gnueabihf
             use-cross: true
+            run-tests: false
           - os: windows-latest
             toolchain: stable-msvc
             target: x86_64-pc-windows-msvc
             use-cross: false
+            run-tests: true
           - os: windows-latest
             toolchain: stable
             target: x86_64-pc-windows-gnu
             use-cross: false
+            run-tests: false
           - os: macos-latest
             toolchain: stable
             target: x86_64-apple-darwin
             use-cross: false
+            run-tests: true
 
     runs-on: '${{ matrix.os }}'
 
@@ -58,4 +66,12 @@ jobs:
         with:
           use-cross: ${{ matrix.use-cross }}
           command: build
+          args: '--all-features --target  ${{ matrix.target }}'
+
+      - name: 'Run tests for ${{ matrix.target }}'
+        uses: actions-rs/cargo@v1
+        if: matrix.run-tests
+        with:
+          use-cross: ${{ matrix.use-cross }}
+          command: test
           args: '--all-features --target  ${{ matrix.target }}'

@@ -19,18 +19,24 @@ _validate:
     cargo test --all-features
 
 @setup-cargo:
+    # DOGFOODING
+    cargo install templar --features bin
+    # Other stuff
     cargo install cargo-deb
     cargo install cargo-readme
 
 build:
     cargo build --features bin
 
+dry-run: _validate
+    cargo publish --all-features --dry-run
+
 tag: _validate
     #!/usr/bin/env bash
     set -Eeou pipefail
-    echo 'Not now'
+    echo "Would tag v$(templar expression -i Cargo.toml '.[`package`][`version`]')"
 
 publish: _validate
     #!/usr/bin/env bash
     set -Eeou pipefail
-    echo 'Not now'
+    cargo publish --all-features

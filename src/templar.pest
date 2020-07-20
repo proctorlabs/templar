@@ -2,7 +2,7 @@ wsc = _{ " " | "\t" | "\n" | "\r" }
 ws = _{ wsc* }
 
 // A whole template, whitespace on either end will be trimmed
-template_root  = _{ SOI ~ template+ ~ EOI }
+template_root  = _{ SOI ~ template* ~ EOI }
 template       = _{ content | comment_block | template_block | control_block }
 template_inner = ${ template* }
 
