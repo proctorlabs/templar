@@ -14,7 +14,7 @@ pub struct Data {
 }
 
 lazy_static! {
-    static ref EMPTY_DOC: Document = { Document::String("".into()) };
+    static ref EMPTY_DOC: Document = Document::String("".into());
 }
 
 impl<'a> Data {

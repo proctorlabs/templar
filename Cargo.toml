@@ -15,7 +15,7 @@ exclude = [".github/**", "docs/**"]
 [package.metadata.deb]
 maintainer = "Phil Proctor <philliptproctor@gmail.com>"
 copyright = "2020, templar development team"
-license-file = ["LICENSE", "5"]
+license-file = ["LICENSE-MIT", "5"]
 extended-description = """\
 Templar is a command for processing template files with \
 a Jinja2 inspired syntax and using a variety of data sources \

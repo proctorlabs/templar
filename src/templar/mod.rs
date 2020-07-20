@@ -13,7 +13,7 @@ pub use template::{Template, TemplateTree};
 use std::collections::BTreeMap;
 
 lazy_static! {
-    static ref GLOBAL: Templar = { Templar::default() };
+    static ref GLOBAL: Templar = Templar::default();
 }
 
 /// The Templar struct is the primary template parser.

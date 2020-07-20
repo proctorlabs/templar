@@ -37,7 +37,7 @@ impl<'a> ContextWalk<'a> {
             })
         }
         let inner_mut: &mut ContextWalkValue<'a> = &mut self.inner.borrow_mut();
-        replace(inner_mut, new_walk.unwrap());
+        drop(replace(inner_mut, new_walk.unwrap()));
     }
 }
 

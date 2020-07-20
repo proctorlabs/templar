@@ -33,8 +33,7 @@ fn parse_file(path: &PathBuf) -> Result<Document> {
     let ext: String = path
         .extension()
         .map(|ext| ext.to_string_lossy().to_lowercase())
-        .unwrap_or_default()
-        .to_string();
+        .unwrap_or_default();
     Ok(match &ext as &str {
         "js" | "json" => serde_json::from_str(&contents).wrap()?,
         "yml" | "yaml" => serde_yaml::from_str(&contents).wrap()?,

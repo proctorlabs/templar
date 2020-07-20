@@ -1,4 +1,7 @@
-target := 'x86_64-unknown-linux-gnu'
+target := `echo -n "${TARGET:-x86_64-unknown-linux-gnu}"`
+build_dir := `echo -n $PWD/target/${TARGET:-x86_64-unknown-linux-gnu}/release`
+package_dir := `echo -n $PWD/target/package`
+bin_name := 'templar'
 
 _readme: setup-cargo
 
@@ -19,14 +22,36 @@ _validate:
     cargo test --all-features
 
 @setup-cargo:
+    rustup toolchain install stable
+    rustup target add '{{ target }}'
+
     # DOGFOODING
     cargo install templar --features bin
+
     # Other stuff
     cargo install cargo-deb
     cargo install cargo-readme
 
 build:
     cargo build --features bin
+
+build-release:
+    #!/usr/bin/env bash
+    set -Eeou pipefail
+    echo '{{ target }}'
+    cargo build --features bin --release --target '{{ target }}'
+
+package-tar: build-release
+    #!/usr/bin/env bash
+    set -Eeou pipefail
+    mkdir -p '{{ package_dir }}'
+    strip '{{ build_dir }}/{{ bin_name }}'
+    tar -C '{{ build_dir }}' -cvJf '{{ package_dir }}/{{ bin_name }}-{{ target }}.tar.xz' '{{ bin_name }}'
+
+package-deb: build-release
+    cargo deb --no-build -o "{{ package_dir }}/{{ bin_name }}-{{ target }}.deb"
+
+package: package-tar package-deb
 
 dry-run: _validate
     cargo publish --all-features --dry-run

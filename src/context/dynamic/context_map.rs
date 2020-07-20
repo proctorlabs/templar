@@ -76,7 +76,7 @@ impl ContextMapValue {
     }
 
     fn set<T: Into<ContextMapValue>>(&mut self, val: T) {
-        replace(self, val.into());
+        drop(replace(self, val.into()));
     }
 
     fn get_or_add_key(&mut self, key: &Document) -> &mut ContextMapValue {
@@ -86,7 +86,7 @@ impl ContextMapValue {
                 .or_insert_with(ContextMapValue::new_map),
             _ => {
                 let new_val = ContextMapValue::new_map();
-                replace(self, new_val);
+                drop(replace(self, new_val));
                 self.get_or_add_key(key)
             }
         }

@@ -7,3 +7,5 @@ Cargo.lock
 .cache
 .config
 .cargo/credentials
+
+.env
