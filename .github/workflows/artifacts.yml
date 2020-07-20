@@ -106,11 +106,10 @@ jobs:
           name: tar-package
           path: target/package/templar-${{ matrix.target }}.tar.xz
 
-      - name: 'Install cargo-strip'
+      - name: 'Install cargo-deb'
         uses: actions-rs/cargo@v1
         if: contains(matrix.package-formats, 'deb')
         with:
-          use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: install
           args: 'cargo-deb'
 
@@ -118,7 +117,6 @@ jobs:
         uses: actions-rs/cargo@v1
         if: contains(matrix.package-formats, 'deb')
         with:
-          use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: deb
           args: |-
             --no-build -o 'target/package/templar-${{ matrix.target }}.tar.xz'
