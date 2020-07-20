@@ -24,19 +24,19 @@ jobs:
             toolchain: stable
             target: aarch64-unknown-linux-gnu
             build-options: ['cross']
-            package-formats: ['tar.xz', 'deb']
+            package-formats: ['tar.xz']
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: aarch64-unknown-linux-musl
             build-options: ['cross']
-            package-formats: ['tar.xz', 'deb']
+            package-formats: ['tar.xz']
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: armv7-unknown-linux-gnueabihf
             build-options: ['cross']
-            package-formats: ['tar.xz', 'deb']
+            package-formats: ['tar.xz']
             ext: ''
           - os: windows-latest
             toolchain: stable-msvc
