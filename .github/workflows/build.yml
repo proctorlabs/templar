@@ -47,7 +47,7 @@ jobs:
             toolchain: stable
             target: x86_64-apple-darwin
             use-cross: false
-            run-tests: true
+            run-tests: false
 
     runs-on: '${{ matrix.os }}'
 
