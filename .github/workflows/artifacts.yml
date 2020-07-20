@@ -80,8 +80,8 @@ jobs:
         if: matrix.tar-xz
         run: |-
               mkdir -p 'target/package'
-              strip templar/target/${{ matrix.target }}/release/templar${{ matrix.ext }}
-              tar -C 'templar/target/${{ matrix.target }}/release/' -cvJf 'templar/target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
+              strip target/${{ matrix.target }}/release/templar${{ matrix.ext }}
+              tar -C 'target/${{ matrix.target }}/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
 
       - name: Upload artifacts to this build
         uses: actions/upload-artifact@master
