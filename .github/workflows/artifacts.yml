@@ -1,9 +1,9 @@
-name: Primary Build
+name: Publish Artifacts
 on: push
 
 jobs:
   build:
-    name: Build Templar
+    name: Publish release artifacts
 
     strategy:
       matrix:
@@ -12,49 +12,49 @@ jobs:
             toolchain: stable
             target: x86_64-unknown-linux-gnu
             use-cross: false
-            run-tests: true
+            tar-xz: true
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: x86_64-unknown-linux-musl
             use-cross: true
-            run-tests: false
+            tar-xz: true
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: aarch64-unknown-linux-gnu
             use-cross: true
-            run-tests: false
+            tar-xz: true
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: aarch64-unknown-linux-musl
             use-cross: true
-            run-tests: false
+            tar-xz: true
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: armv7-unknown-linux-gnueabihf
             use-cross: true
-            run-tests: false
+            tar-xz: true
             ext: ''
           - os: windows-latest
             toolchain: stable-msvc
             target: x86_64-pc-windows-msvc
             use-cross: false
-            run-tests: false
+            tar-xz: false
             ext: '.exe'
           - os: windows-latest
             toolchain: stable
             target: x86_64-pc-windows-gnu
             use-cross: false
-            run-tests: false
+            tar-xz: false
             ext: '.exe'
           - os: macos-latest
             toolchain: stable
             target: x86_64-apple-darwin
             use-cross: false
-            run-tests: false
+            tar-xz: false
             ext: ''
 
     runs-on: '${{ matrix.os }}'
@@ -76,10 +76,16 @@ jobs:
           command: build
           args: '--all-features --target ${{ matrix.target }}'
 
-      - name: 'Run tests for ${{ matrix.target }}'
-        uses: actions-rs/cargo@v1
-        if: matrix.run-tests
+      - name: Testing artifact publish
+        if: matrix.tar-xz
+        run: |-
+              mkdir -p 'target/package'
+              strip target/${{ matrix.target }}/debug/templar${{ matrix.ext }}
+              tar -C '{{ build_dir }}' -cvJf '{{ package_dir }}/{{ bin_name }}-{{ target }}.tar.xz' '{{ bin_name }}'
+
+      - name: Upload artifacts to this build
+        uses: actions/upload-artifact@master
+        if: matrix.tar-xz
         with:
-          use-cross: ${{ matrix.use-cross }}
-          command: test
-          args: '--all-features --target ${{ matrix.target }}'
+          name: tar-package
+          path: target/packages/
