@@ -32,6 +32,7 @@ _validate:
     cargo install cargo-deb
     cargo install cargo-readme
     cargo install cargo-strip
+    cargo install mdbook
 
 build:
     cargo build --features bin
@@ -48,6 +49,12 @@ package-tar: build-release
     mkdir -p '{{ package_dir }}'
     cargo strip --target '{{ target }}'
     tar -C '{{ build_dir }}' -cvJf '{{ package_dir }}/{{ bin_name }}-{{ target }}.tar.xz' '{{ bin_name }}'
+
+book:
+    mdbook build docs
+
+serve-book:
+    mdbook serve docs
 
 package-deb: build-release
     cargo deb --no-build -o "{{ package_dir }}/{{ bin_name }}-{{ target }}.deb"

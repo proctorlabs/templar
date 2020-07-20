@@ -111,4 +111,4 @@ jobs:
         if: matrix.tar-xz
         with:
           name: tar-package
-          path: target/packages/
+          path: target/package/templar-${{ matrix.target }}.tar.xz
