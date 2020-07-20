@@ -74,9 +74,9 @@ jobs:
         with:
           use-cross: ${{ matrix.use-cross }}
           command: build
-          args: '--all-features --target ${{ matrix.target }}'
+          args: '--all-features --target ${{ matrix.target }} --release'
 
-      - name: Testing artifact publish
+      - name: Create tar.xz package
         if: matrix.tar-xz
         run: |-
               mkdir -p 'target/package'
