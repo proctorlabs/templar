@@ -65,8 +65,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.use-cross }}
-          command: build
-          args: '--all-features --target ${{ matrix.target }} --target-dir ${{ env.GITHUB_WORKSPACE }}/templar/target/artifacts'
+          command: install
+          args: '--all-features --path . --root . --target ${{ matrix.target }}'
 
       - name: 'Run tests for ${{ matrix.target }}'
         uses: actions-rs/cargo@v1
@@ -80,4 +80,4 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: binary
-          path: target/artifacts/debug/templar
+          path: bin/templar
