@@ -73,7 +73,7 @@ jobs:
       - name: 'Build binary for ${{ matrix.target }}'
         uses: actions-rs/cargo@v1
         with:
-          use-cross: ${{ matrix.use-cross }}
+          use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: build
           args: '--all-features --target ${{ matrix.target }} --release'
 
@@ -81,7 +81,7 @@ jobs:
         uses: actions-rs/cargo@v1
         if: contains(matrix.build-options, 'strip')
         with:
-          use-cross: ${{ matrix.use-cross }}
+          use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: install
           args: 'cargo-strip'
 
@@ -89,7 +89,7 @@ jobs:
         uses: actions-rs/cargo@v1
         if: contains(matrix.build-options, 'strip')
         with:
-          use-cross: ${{ matrix.use-cross }}
+          use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: strip
           args: '--target ${{ matrix.target }}'
 
@@ -110,7 +110,7 @@ jobs:
         uses: actions-rs/cargo@v1
         if: contains(matrix.package-formats, 'deb')
         with:
-          use-cross: ${{ matrix.use-cross }}
+          use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: install
           args: 'cargo-deb'
 
@@ -118,7 +118,7 @@ jobs:
         uses: actions-rs/cargo@v1
         if: contains(matrix.package-formats, 'deb')
         with:
-          use-cross: ${{ matrix.use-cross }}
+          use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: deb
           args: |-
             --no-build -o 'target/package/templar-${{ matrix.target }}.tar.xz'
