@@ -11,58 +11,50 @@ jobs:
           - os: ubuntu-latest
             toolchain: stable
             target: x86_64-unknown-linux-gnu
-            use-cross: false
-            tar-xz: true
-            strip: true
+            build-options: ['strip']
+            package-formats: ['tar.xz', 'deb']
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: x86_64-unknown-linux-musl
-            use-cross: true
-            tar-xz: true
-            strip: false
+            build-options: ['cross']
+            package-formats: ['tar.xz', 'deb']
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: aarch64-unknown-linux-gnu
-            use-cross: true
-            tar-xz: true
-            strip: false
+            build-options: ['cross']
+            package-formats: ['tar.xz', 'deb']
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: aarch64-unknown-linux-musl
-            use-cross: true
-            tar-xz: true
-            strip: false
+            build-options: ['cross']
+            package-formats: ['tar.xz', 'deb']
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
             target: armv7-unknown-linux-gnueabihf
-            use-cross: true
-            tar-xz: true
-            strip: false
+            build-options: ['cross']
+            package-formats: ['tar.xz', 'deb']
             ext: ''
           - os: windows-latest
             toolchain: stable-msvc
             target: x86_64-pc-windows-msvc
-            use-cross: false
-            tar-xz: false
-            strip: false
+            build-options: []
+            package-formats: []
             ext: '.exe'
           - os: windows-latest
             toolchain: stable
             target: x86_64-pc-windows-gnu
-            use-cross: false
-            tar-xz: false
-            strip: false
+            build-options: []
+            package-formats: []
             ext: '.exe'
           - os: macos-latest
             toolchain: stable
             target: x86_64-apple-darwin
-            use-cross: false
-            tar-xz: false
-            strip: false
+            build-options: []
+            package-formats: []
             ext: ''
 
     runs-on: '${{ matrix.os }}'
@@ -84,9 +76,9 @@ jobs:
           command: build
           args: '--all-features --target ${{ matrix.target }} --release'
 
-      - name: 'Build binary for ${{ matrix.target }}'
+      - name: 'Install cargo-strip'
         uses: actions-rs/cargo@v1
-        if: matrix.strip
+        if: contains(matrix.build-options, 'strip')
         with:
           use-cross: ${{ matrix.use-cross }}
           command: install
@@ -94,21 +86,45 @@ jobs:
 
       - name: 'Strip build binaries'
         uses: actions-rs/cargo@v1
-        if: matrix.strip
+        if: contains(matrix.build-options, 'strip')
         with:
           use-cross: ${{ matrix.use-cross }}
           command: strip
           args: '--target ${{ matrix.target }}'
 
       - name: Create tar.xz package
-        if: matrix.tar-xz
+        if: contains(matrix.package-formats, 'tar.xz')
         run: |-
               mkdir -p 'target/package'
               tar -C 'target/${{ matrix.target }}/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
 
-      - name: Upload artifacts to this build
+      - name: Upload tar.xz artifact
         uses: actions/upload-artifact@master
-        if: matrix.tar-xz
+        if: contains(matrix.package-formats, 'tar.xz')
         with:
           name: tar-package
           path: target/package/templar-${{ matrix.target }}.tar.xz
+
+      - name: 'Install cargo-strip'
+        uses: actions-rs/cargo@v1
+        if: contains(matrix.package-formats, 'deb')
+        with:
+          use-cross: ${{ matrix.use-cross }}
+          command: install
+          args: 'cargo-deb'
+
+      - name: 'Create debian artifact'
+        uses: actions-rs/cargo@v1
+        if: contains(matrix.package-formats, 'deb')
+        with:
+          use-cross: ${{ matrix.use-cross }}
+          command: deb
+          args: |-
+            --no-build -o 'target/package/templar-${{ matrix.target }}.tar.xz'
+
+      - name: Upload debian artifact
+        uses: actions/upload-artifact@master
+        if: contains(matrix.package-formats, 'deb')
+        with:
+          name: tar-package
+          path: target/package/templar-${{ matrix.target }}.deb
