@@ -46,31 +46,6 @@ jobs:
           name: ${{ matrix.target }}
           path: target/${{ matrix.target }}/release/templar
 
-  package-linux:
-    name: Package Linux Artifacts
-    runs-on: 'ubuntu-latest'
-    needs: ['build-linux']
-    strategy:
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-          - target: x86_64-unknown-linux-musl
-          - target: aarch64-unknown-linux-gnu
-          - target: aarch64-unknown-linux-musl
-          - target: armv7-unknown-linux-gnueabihf
-
-    steps:
-      - name: Pull ${{ matrix.target }}
-        uses: actions/download-artifact@master
-        with:
-          name: ${{ matrix.target }}
-
-      - name: Package tarball
-        run: |-
-          ls -al
-          tar -cvJf 'templar-${{ matrix.target }}.tar.xz' templar
-          ls -al
-
   build-windows:
     name: Build Windows Artifacts
 
@@ -133,3 +108,57 @@ jobs:
         with:
           name: x86_64-apple-darwin
           path: target/release/templar
+
+  tarballs:
+    name: Package Tarballs
+    runs-on: 'ubuntu-latest'
+    needs: ['build-linux', 'build-macos']
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-musl
+          - target: aarch64-unknown-linux-gnu
+          - target: aarch64-unknown-linux-musl
+          - target: armv7-unknown-linux-gnueabihf
+          - target: x86_64-apple-darwin
+
+    steps:
+      - name: Pull ${{ matrix.target }}
+        uses: actions/download-artifact@master
+        with:
+          name: ${{ matrix.target }}
+
+      - name: Package tarball
+        run: tar -cvJf 'templar-${{ matrix.target }}.tar.xz' templar
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: packages
+          path: templar-${{ matrix.target }}.tar.xz
+
+  zips:
+    name: Package Zipfiles
+    runs-on: 'ubuntu-latest'
+    needs: ['build-windows']
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-musl
+
+    steps:
+      - name: Pull ${{ matrix.target }}
+        uses: actions/download-artifact@master
+        with:
+          name: ${{ matrix.target }}
+
+      - name: Package tarball
+        run: zip 'templar-${{ matrix.target }}.zip' templar.exe
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: packages
+          path: templar-${{ matrix.target }}.zip
