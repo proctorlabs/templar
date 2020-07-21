@@ -40,28 +40,11 @@ jobs:
           command: build
           args: '--all-features --target ${{ matrix.target }} --release'
 
-      - name: 'Package binaries'
-        shell: bash
-        run: |-
-          cargo install cargo-strip --debug
-          cargo install cargo-deb --debug
-          cargo strip --target ${{ matrix.target }} || true
-          mkdir -p 'target/package'
-          tar -C 'target/${{ matrix.target }}/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
-          cp -f target/${{ matrix.target }}/release/templar target/release/templar
-          cargo deb --no-build --no-strip -o 'target/package/templar-${{ matrix.target }}.deb --target ${{ matrix.target }}'
-
-      - name: Upload tarball
-        uses: actions/upload-artifact@master
-        with:
-          name: linux-tarball
-          path: target/package/*.tar.xz
-
       - name: Upload debian artifact
         uses: actions/upload-artifact@master
         with:
-          name: linux-deb
-          path: target/package/*.deb
+          name: ${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/templar
 
   build-windows:
     name: Build Windows Artifacts
@@ -97,7 +80,7 @@ jobs:
       - name: Upload Windows artifact
         uses: actions/upload-artifact@master
         with:
-          name: windows
+          name: '${{ matrix.target }}'
           path: target/${{ matrix.target }}/release/*.exe
 
   build-macos:
@@ -123,5 +106,5 @@ jobs:
       - name: Upload Mac artifact
         uses: actions/upload-artifact@master
         with:
-          name: darwin
+          name: x86_64-apple-darwin
           path: target/release/templar
