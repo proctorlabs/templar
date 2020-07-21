@@ -2,7 +2,7 @@ name: Build Artifacts
 on: push
 
 jobs:
-  build-unix:
+  build-linux:
     name: Build Linux Artifacts
 
     strategy:
@@ -40,11 +40,35 @@ jobs:
           command: build
           args: '--all-features --target ${{ matrix.target }} --release'
 
-      - name: Upload debian artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@master
         with:
           name: ${{ matrix.target }}
           path: target/${{ matrix.target }}/release/templar
+
+  package-linux:
+    name: Package Linux Artifacts
+    runs-on: 'ubuntu-latest'
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-musl
+          - target: aarch64-unknown-linux-gnu
+          - target: aarch64-unknown-linux-musl
+          - target: armv7-unknown-linux-gnueabihf
+
+    steps:
+      - name: Pull ${{ matrix.target }}
+        uses: actions/download-artifact@master
+        with:
+          name: ${{ matrix.target }}
+
+      - name: Package tarball
+        run: |-
+          ls -al
+          tar -cvJf 'templar-${{ matrix.target }}.tar.xz' templar
+          ls -al
 
   build-windows:
     name: Build Windows Artifacts
