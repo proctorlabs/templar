@@ -119,7 +119,7 @@ jobs:
         with:
           command: deb
           args: |-
-            --no-build --no-strip -o 'target/package/templar-${{ matrix.target }}.deb'
+            --no-build --no-strip -o 'target/package/templar-${{ matrix.target }}.deb --target ${{ matrix.target }}'
 
       - name: Upload debian artifact
         uses: actions/upload-artifact@master

@@ -86,7 +86,7 @@ name = "templar_benchmark"
 harness = false
 path = "benches/lib.rs"
 
-# [profile.release]
-# opt-level = 3
-# lto = true
-# codegen-units = 1
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
