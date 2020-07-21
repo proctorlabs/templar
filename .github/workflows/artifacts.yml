@@ -116,7 +116,7 @@ jobs:
       - name: Workaround for cargo-deb issue
         if: contains(matrix.package-formats, 'deb')
         run: |-
-          cp -rf target/${{ matrix.target }}/release/ target/release/
+          cp -rf target/${{ matrix.target }}/release target/release
 
       - name: 'Create debian artifact'
         uses: actions-rs/cargo@v1
