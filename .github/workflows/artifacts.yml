@@ -1,5 +1,7 @@
 name: Build Artifacts
-on: push
+on:
+  push:
+    tags: ['v**']
 
 jobs:
   build-linux:
@@ -109,10 +111,34 @@ jobs:
           name: x86_64-apple-darwin
           path: target/release/templar
 
-  tarballs:
-    name: Package Tarballs
+  new-release:
+    name: Create new release
     runs-on: 'ubuntu-latest'
-    needs: ['build-linux', 'build-macos']
+    needs: ['build-linux', 'build-macos', 'build-windows']
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Download all packages
+        uses: actions/download-artifact@master
+        with:
+          name: packages
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ''
+          draft: false
+          prerelease: false
+
+  release-tar-xz:
+    name: Upload Tarballs
+    runs-on: 'ubuntu-latest'
+    needs: ['new-release']
     strategy:
       matrix:
         include:
@@ -132,16 +158,21 @@ jobs:
       - name: Package tarball
         run: tar -cvJf 'templar-${{ matrix.target }}.tar.xz' templar
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@master
+      - name: Upload Release Assets
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: packages
-          path: templar-${{ matrix.target }}.tar.xz
+          upload_url: ${{ needs.new-release.outputs.upload_url }}
+          asset_path: ./templar-${{ matrix.target }}.tar.xz
+          asset_name: templar-${{ matrix.target }}.tar.xz
+          asset_content_type: application/x-gtar
 
-  zips:
-    name: Package Zipfiles
+  release-zip:
+    name: Upload Zipfiles
     runs-on: 'ubuntu-latest'
-    needs: ['build-windows']
+    needs: ['new-release']
     strategy:
       matrix:
         include:
@@ -154,11 +185,16 @@ jobs:
         with:
           name: ${{ matrix.target }}
 
-      - name: Package tarball
+      - name: Zip it up
         run: zip 'templar-${{ matrix.target }}.zip' templar.exe
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@master
+      - name: Upload Release Assets
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: packages
-          path: templar-${{ matrix.target }}.zip
+          upload_url: ${{ needs.new-release.outputs.upload_url }}
+          asset_path: ./templar-${{ matrix.target }}.zip
+          asset_name: templar-${{ matrix.target }}.zip
+          asset_content_type: application/zip
