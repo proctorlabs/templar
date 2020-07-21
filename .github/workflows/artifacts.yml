@@ -9,10 +9,15 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
+            build-options: []
           - target: x86_64-unknown-linux-musl
+            build-options: []
           - target: aarch64-unknown-linux-gnu
+            build-options: [cross]
           - target: aarch64-unknown-linux-musl
+            build-options: [cross]
           - target: armv7-unknown-linux-gnueabihf
+            build-options: [cross]
 
     runs-on: 'ubuntu-latest'
 
