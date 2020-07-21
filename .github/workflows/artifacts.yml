@@ -96,8 +96,8 @@ jobs:
       - name: Create tar.xz package
         if: contains(matrix.package-formats, 'tar.xz')
         run: |-
-              mkdir -p 'target/package'
-              tar -C 'target/${{ matrix.target }}/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
+          mkdir -p 'target/package'
+          tar -C 'target/${{ matrix.target }}/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
 
       - name: Upload tar.xz artifact
         uses: actions/upload-artifact@master
@@ -112,6 +112,11 @@ jobs:
         with:
           command: install
           args: 'cargo-deb'
+
+      - name: Workaround for cargo-deb issue
+        if: contains(matrix.package-formats, 'deb')
+        run: |-
+          cp -rf target/${{ matrix.target }}/release/ target/release/
 
       - name: 'Create debian artifact'
         uses: actions-rs/cargo@v1
