@@ -49,6 +49,7 @@ jobs:
   package-linux:
     name: Package Linux Artifacts
     runs-on: 'ubuntu-latest'
+    needs: ['build-linux']
     strategy:
       matrix:
         include:
