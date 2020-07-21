@@ -69,13 +69,14 @@ jobs:
           toolchain: stable
           target: '${{ matrix.target }}'
           override: true
+          default: true
 
       - name: 'Build binary for ${{ matrix.target }}'
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: build
-          args: '--all-features --target ${{ matrix.target }} --release'
+          args: '--all-features --release'
 
       - name: 'Install cargo-strip'
         uses: actions-rs/cargo@v1
@@ -91,13 +92,13 @@ jobs:
         with:
           use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: strip
-          args: '--target ${{ matrix.target }}'
+          args: ''
 
       - name: Create tar.xz package
         if: contains(matrix.package-formats, 'tar.xz')
         run: |-
           mkdir -p 'target/package'
-          tar -C 'target/${{ matrix.target }}/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
+          tar -C 'target/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
 
       - name: Upload tar.xz artifact
         uses: actions/upload-artifact@master
@@ -113,18 +114,13 @@ jobs:
           command: install
           args: 'cargo-deb'
 
-      - name: Workaround for cargo-deb issue
-        if: contains(matrix.package-formats, 'deb')
-        run: |-
-          cp -rf target/${{ matrix.target }}/release target/release
-
       - name: 'Create debian artifact'
         uses: actions-rs/cargo@v1
         if: contains(matrix.package-formats, 'deb')
         with:
           command: deb
           args: |-
-            --no-build --no-strip -o 'target/package/templar-${{ matrix.target }}.deb --target ${{ matrix.target }}'
+            --no-build --no-strip -o 'target/package/templar-${{ matrix.target }}.deb'
 
       - name: Upload debian artifact
         uses: actions/upload-artifact@master
