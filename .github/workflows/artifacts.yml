@@ -118,11 +118,6 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - name: Download all packages
-        uses: actions/download-artifact@master
-        with:
-          name: packages
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
