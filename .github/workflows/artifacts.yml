@@ -1,63 +1,20 @@
-name: Publish Artifacts
+name: Build Artifacts
 on: push
 
 jobs:
-  build:
-    name: Publish release artifacts
+  build-unix:
+    name: Build Linux Artifacts
 
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            toolchain: stable
-            target: x86_64-unknown-linux-gnu
-            build-options: ['strip']
-            package-formats: ['tar.xz', 'deb']
-            ext: ''
-          - os: ubuntu-latest
-            toolchain: stable
-            target: x86_64-unknown-linux-musl
-            build-options: ['cross']
-            package-formats: ['tar.xz', 'deb']
-            ext: ''
-          - os: ubuntu-latest
-            toolchain: stable
-            target: aarch64-unknown-linux-gnu
-            build-options: ['cross']
-            package-formats: ['tar.xz']
-            ext: ''
-          - os: ubuntu-latest
-            toolchain: stable
-            target: aarch64-unknown-linux-musl
-            build-options: ['cross']
-            package-formats: ['tar.xz']
-            ext: ''
-          - os: ubuntu-latest
-            toolchain: stable
-            target: armv7-unknown-linux-gnueabihf
-            build-options: ['cross']
-            package-formats: ['tar.xz']
-            ext: ''
-          - os: windows-latest
-            toolchain: stable-msvc
-            target: x86_64-pc-windows-msvc
-            build-options: []
-            package-formats: []
-            ext: '.exe'
-          - os: windows-latest
-            toolchain: stable
-            target: x86_64-pc-windows-gnu
-            build-options: []
-            package-formats: []
-            ext: '.exe'
-          - os: macos-latest
-            toolchain: stable
-            target: x86_64-apple-darwin
-            build-options: []
-            package-formats: []
-            ext: ''
+          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-musl
+          - target: aarch64-unknown-linux-gnu
+          - target: aarch64-unknown-linux-musl
+          - target: armv7-unknown-linux-gnueabihf
 
-    runs-on: '${{ matrix.os }}'
+    runs-on: 'ubuntu-latest'
 
     steps:
       - name: Checkout code
@@ -76,55 +33,77 @@ jobs:
         with:
           use-cross: ${{ contains(matrix.build-options, 'cross') }}
           command: build
-          args: '--all-features --release'
+          args: '--all-features --target ${{ matrix.target }} --release'
 
       - name: 'Install cargo-strip'
-        uses: actions-rs/cargo@v1
-        if: contains(matrix.build-options, 'strip')
-        with:
-          use-cross: ${{ contains(matrix.build-options, 'cross') }}
-          command: install
-          args: 'cargo-strip'
-
-      - name: 'Strip build binaries'
-        uses: actions-rs/cargo@v1
-        if: contains(matrix.build-options, 'strip')
-        with:
-          use-cross: ${{ contains(matrix.build-options, 'cross') }}
-          command: strip
-          args: ''
-
-      - name: Create tar.xz package
-        if: contains(matrix.package-formats, 'tar.xz')
         run: |-
+          cargo install cargo-strip --debug
+          cargo install cargo-deb --debug
+          cargo strip --target ${{ matrix.target }} || true
           mkdir -p 'target/package'
-          tar -C 'target/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
+          tar -C 'target/${{ matrix.target }}/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
+          cp -rf target/${{ matrix.target }}/release target/release
+          cargo deb --no-build --no-strip -o 'target/package/templar-${{ matrix.target }}.deb --target ${{ matrix.target }}'
 
-      - name: Upload tar.xz artifact
+      - name: Upload tarball
         uses: actions/upload-artifact@master
-        if: contains(matrix.package-formats, 'tar.xz')
         with:
-          name: tar-package
+          name: linux-tarball
           path: target/package/templar-${{ matrix.target }}.tar.xz
-
-      - name: 'Install cargo-deb'
-        uses: actions-rs/cargo@v1
-        if: contains(matrix.package-formats, 'deb')
-        with:
-          command: install
-          args: 'cargo-deb'
-
-      - name: 'Create debian artifact'
-        uses: actions-rs/cargo@v1
-        if: contains(matrix.package-formats, 'deb')
-        with:
-          command: deb
-          args: |-
-            --no-build --no-strip -o 'target/package/templar-${{ matrix.target }}.deb'
 
       - name: Upload debian artifact
         uses: actions/upload-artifact@master
-        if: contains(matrix.package-formats, 'deb')
         with:
-          name: tar-package
+          name: linux-deb
           path: target/package/templar-${{ matrix.target }}.deb
+
+  build-windows:
+    name: Build Windows Artifacts
+
+    strategy:
+      matrix:
+        include:
+          - toolchain: stable-msvc
+            target: x86_64-pc-windows-msvc
+          - toolchain: stable
+            target: x86_64-pc-windows-gnu
+
+    runs-on: 'windows-latest'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: '${{ matrix.target }}'
+          override: true
+          default: true
+
+      - name: 'Build binary for ${{ matrix.target }}'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: '--all-features --target ${{ matrix.target }} --release'
+
+  build-macos:
+    name: Build Mac Artifacts
+    runs-on: 'macos-latest'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: 'x86_64-apple-darwin'
+
+      - name: 'Build binary for x86_64-apple-darwin'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: '--all-features --release'
