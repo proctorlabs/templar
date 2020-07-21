@@ -40,14 +40,14 @@ jobs:
           command: build
           args: '--all-features --target ${{ matrix.target }} --release'
 
-      - name: 'Install cargo-strip'
+      - name: 'Package binaries'
         run: |-
           cargo install cargo-strip --debug
           cargo install cargo-deb --debug
           cargo strip --target ${{ matrix.target }} || true
           mkdir -p 'target/package'
           tar -C 'target/${{ matrix.target }}/release/' -cvJf 'target/package/templar-${{ matrix.target }}.tar.xz' 'templar'
-          cp -rf target/${{ matrix.target }}/release target/release
+          cp -f target/${{ matrix.target }}/release/templar target/release/templar
           cargo deb --no-build --no-strip -o 'target/package/templar-${{ matrix.target }}.deb --target ${{ matrix.target }}'
 
       - name: Upload tarball

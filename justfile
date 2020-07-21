@@ -1,6 +1,7 @@
 target := `echo -n "${TARGET:-x86_64-unknown-linux-gnu}"`
 build_dir := `echo -n $PWD/target/${TARGET:-x86_64-unknown-linux-gnu}/release`
 package_dir := `echo -n $PWD/target/package`
+cargo := `echo -n "${CARGO:-cargo}"`
 bin_name := 'templar'
 
 _readme: setup-cargo
@@ -41,23 +42,24 @@ build-release:
     #!/usr/bin/env bash
     set -Eeou pipefail
     echo 'Building for {{ target }}'
-    cargo build --features bin --release --target '{{ target }}'
+    {{cargo}} build --features bin --release --target '{{ target }}'
 
 package-tar: build-release
     #!/usr/bin/env bash
     set -Eeou pipefail
     mkdir -p '{{ package_dir }}'
-    cargo strip --target '{{ target }}'
+    cargo strip --target '{{ target }}' || true
     tar -C '{{ build_dir }}' -cvJf '{{ package_dir }}/{{ bin_name }}-{{ target }}.tar.xz' '{{ bin_name }}'
+
+package-deb: build-release
+    cp -f target/{{ target }}/release/templar target/release/templar
+    cargo deb --no-build --no-strip -o "{{ package_dir }}/{{ bin_name }}-{{ target }}.deb"
 
 book:
     mdbook build docs
 
 serve-book:
     mdbook serve docs
-
-package-deb: build-release
-    cargo deb --no-build -o "{{ package_dir }}/{{ bin_name }}-{{ target }}.deb"
 
 package: package-tar package-deb
 
