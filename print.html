@@ -158,6 +158,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
+<p>...</p>
 <h1><a class="header" href="#installation" id="installation">Installation</a></h1>
 <h1><a class="header" href="#overview" id="overview">Overview</a></h1>
 <h1><a class="header" href="#templar-cli" id="templar-cli">Templar CLI</a></h1>
@@ -262,21 +263,6 @@ that map into a serialized YML string.</p>
 
         </div>
 
-        
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3000/__livereload");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload();
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
         
 
         
