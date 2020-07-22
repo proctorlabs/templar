@@ -151,7 +151,9 @@ jobs:
           name: ${{ matrix.target }}
 
       - name: Package tarball
-        run: tar -cvJf 'templar-${{ matrix.target }}.tar.xz' templar
+        run: |-
+          chmod +x templar
+          tar -cJf 'templar-${{ matrix.target }}.tar.xz' templar
 
       - name: Upload Release Assets
         id: upload-release-asset
