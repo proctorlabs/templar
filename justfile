@@ -4,6 +4,9 @@ package_dir := `echo -n $PWD/target/package`
 cargo := `echo -n "${CARGO:-cargo}"`
 bin_name := 'templar'
 
+release: tag publish
+default: build
+
 _readme: setup-cargo
 
 _validate:
@@ -38,6 +41,9 @@ _validate:
 build:
     cargo build --features bin
 
+run +args:
+    cargo run --features bin -- {{args}}
+
 build-release:
     #!/usr/bin/env bash
     set -Eeou pipefail
@@ -69,7 +75,8 @@ dry-run: _validate
 tag: _validate
     #!/usr/bin/env bash
     set -Eeou pipefail
-    echo "Would tag v$(templar expression -i Cargo.toml '.[`package`][`version`]')"
+    git tag "v$(templar expression -i Cargo.toml '.[`package`][`version`]')"
+    git push --tags
 
 publish: _validate
     #!/usr/bin/env bash
