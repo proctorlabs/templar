@@ -44,7 +44,7 @@
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "../";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "coal" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../install.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="../quickstart.html"><strong aria-hidden="true">3.</strong> Quick Start</a></li><li class="chapter-item expanded "><a href="../cli/intro.html"><strong aria-hidden="true">4.</strong> Command Line</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../cli/usage.html"><strong aria-hidden="true">4.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="../templates/intro.html" class="active"><strong aria-hidden="true">5.</strong> Templating</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../templates/filters.html"><strong aria-hidden="true">5.1.</strong> Filters</a></li><li class="chapter-item expanded "><a href="../templates/functions.html"><strong aria-hidden="true">5.2.</strong> Functions</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../install.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><strong aria-hidden="true">3.</strong> Quick Start</li><li class="chapter-item expanded "><strong aria-hidden="true">4.</strong> Command Line<a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../cli/usage.html"><strong aria-hidden="true">4.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="../templates/intro.html" class="active"><strong aria-hidden="true">5.</strong> Templating</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../templates/syntax.html"><strong aria-hidden="true">5.1.</strong> Syntax</a></li><li class="chapter-item "><a href="../templates/expressions.html"><strong aria-hidden="true">5.2.</strong> Expressions</a></li><li class="chapter-item "><a href="../templates/filters.html"><strong aria-hidden="true">5.3.</strong> Filters</a></li><li class="chapter-item "><a href="../templates/functions.html"><strong aria-hidden="true">5.4.</strong> Functions</a></li></ol></li><li class="chapter-item expanded "><a href="../api.html"><strong aria-hidden="true">6.</strong> API Documentation</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -128,6 +128,10 @@
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
                         
+                        <a href="https://github.com/proctorlabs/templar" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        
                     </div>
                 </div>
 
@@ -156,7 +160,22 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#templating" id="templating">Templating</a></h1>
-<p>TBD</p>
+<p>Templar's templating syntax is inspired by Jinja2 and Ansible.</p>
+<h2><a class="header" href="#examples" id="examples">Examples</a></h2>
+<p>The templating syntax is likely familiar considering the frameworks that it is based on. For instance, a
+simple template may look like this:</p>
+<pre><code class="language-properties">user_name={{ user.name }} {# Replace with the context property 'name' in 'user' #}
+full_context={{ . | json(&quot;pretty&quot;) }} {# Dump the entire context as JSON, '.' is the root node #}
+password={{ script('echo hunter2 | md5sum') }} {# Execute a shell command and calculate the MD5 sum #}
+</code></pre>
+<p>In addition to simple replacements, more complex expressions can be used.</p>
+<pre><code class="language-markdown">The calculated result is {{ 100 * 5 / 10 }} {#- Prints '50' #}
+
+Today's guest list:
+{%- for person in ['Bob', 'Joe', 'Jen', 'Amy')] %}
+* {{ person }} will come to the party!
+{%- endfor %} {#- This will loop everyone in the inline array above, but they array could also come from the context #}
+</code></pre>
 
                     </main>
 
@@ -169,7 +188,7 @@
                         
 
                         
-                            <a rel="next" href="../templates/filters.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../templates/syntax.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -187,7 +206,7 @@
                 
 
                 
-                    <a rel="next" href="../templates/filters.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../templates/syntax.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

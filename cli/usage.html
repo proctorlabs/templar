@@ -44,7 +44,7 @@
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "../";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "coal" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../install.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="../quickstart.html"><strong aria-hidden="true">3.</strong> Quick Start</a></li><li class="chapter-item expanded "><a href="../cli/intro.html"><strong aria-hidden="true">4.</strong> Command Line</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../cli/usage.html" class="active"><strong aria-hidden="true">4.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="../templates/intro.html"><strong aria-hidden="true">5.</strong> Templating</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../templates/filters.html"><strong aria-hidden="true">5.1.</strong> Filters</a></li><li class="chapter-item expanded "><a href="../templates/functions.html"><strong aria-hidden="true">5.2.</strong> Functions</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../install.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><strong aria-hidden="true">3.</strong> Quick Start</li><li class="chapter-item expanded "><strong aria-hidden="true">4.</strong> Command Line<a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../cli/usage.html" class="active"><strong aria-hidden="true">4.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="../templates/intro.html"><strong aria-hidden="true">5.</strong> Templating</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../templates/syntax.html"><strong aria-hidden="true">5.1.</strong> Syntax</a></li><li class="chapter-item "><a href="../templates/expressions.html"><strong aria-hidden="true">5.2.</strong> Expressions</a></li><li class="chapter-item "><a href="../templates/filters.html"><strong aria-hidden="true">5.3.</strong> Filters</a></li><li class="chapter-item "><a href="../templates/functions.html"><strong aria-hidden="true">5.4.</strong> Functions</a></li></ol></li><li class="chapter-item expanded "><a href="../api.html"><strong aria-hidden="true">6.</strong> API Documentation</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -126,6 +126,10 @@
                     <div class="right-buttons">
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        <a href="https://github.com/proctorlabs/templar" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
                         
                     </div>
@@ -198,7 +202,7 @@ ARGS:
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../cli/intro.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../install.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
@@ -216,7 +220,7 @@ ARGS:
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../cli/intro.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../install.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 

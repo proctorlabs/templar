@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Functions - Templar</title>
+        <title>Expressions - Templar</title>
         
         
 
@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../install.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><strong aria-hidden="true">3.</strong> Quick Start</li><li class="chapter-item expanded "><strong aria-hidden="true">4.</strong> Command Line<a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../cli/usage.html"><strong aria-hidden="true">4.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="../templates/intro.html"><strong aria-hidden="true">5.</strong> Templating</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../templates/syntax.html"><strong aria-hidden="true">5.1.</strong> Syntax</a></li><li class="chapter-item "><a href="../templates/expressions.html"><strong aria-hidden="true">5.2.</strong> Expressions</a></li><li class="chapter-item "><a href="../templates/filters.html"><strong aria-hidden="true">5.3.</strong> Filters</a></li><li class="chapter-item expanded "><a href="../templates/functions.html" class="active"><strong aria-hidden="true">5.4.</strong> Functions</a></li></ol></li><li class="chapter-item expanded "><a href="../api.html"><strong aria-hidden="true">6.</strong> API Documentation</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../install.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><strong aria-hidden="true">3.</strong> Quick Start</li><li class="chapter-item expanded "><strong aria-hidden="true">4.</strong> Command Line<a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../cli/usage.html"><strong aria-hidden="true">4.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="../templates/intro.html"><strong aria-hidden="true">5.</strong> Templating</a><a class="toggle"><div>❱</div></a></li><li><ol class="section"><li class="chapter-item "><a href="../templates/syntax.html"><strong aria-hidden="true">5.1.</strong> Syntax</a></li><li class="chapter-item expanded "><a href="../templates/expressions.html" class="active"><strong aria-hidden="true">5.2.</strong> Expressions</a></li><li class="chapter-item "><a href="../templates/filters.html"><strong aria-hidden="true">5.3.</strong> Filters</a></li><li class="chapter-item "><a href="../templates/functions.html"><strong aria-hidden="true">5.4.</strong> Functions</a></li></ol></li><li class="chapter-item expanded "><a href="../api.html"><strong aria-hidden="true">6.</strong> API Documentation</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -159,39 +159,31 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#functions" id="functions">Functions</a></h1>
-<p>Functions are used for pulling or creating data from other sources or using other methods.</p>
-<h2><a class="header" href="#overview" id="overview">Overview</a></h2>
-<p>As an example, the file() function will open a file and return the contents as a string. Functions do not require
-any data to work, though most need arguments. Functions can be used as an argument to other functions,
-to filters, or as the base operation. For example, this is a valid expression:</p>
-<pre><code class="language-template">{ 'filename': 'settings.json', 'content': json(file('settings.json')) } | yml
-</code></pre>
-<p>The above will creat a map with two fields &quot;filename&quot; and &quot;content&quot; with content containing the parsed
-contents the file <code>settings.json</code>. Then we pass this map to the filter <code>yml</code> to then render
-that map into a serialized YML string.</p>
-<h2><a class="header" href="#built-in-functions" id="built-in-functions">Built in functions</a></h2>
+                        <h1><a class="header" href="#expressions" id="expressions">Expressions</a></h1>
+<p>Everything inside the standard <code>{{ }}</code> block is an expression. Each block holds exactly one expression, but that expression can be chained with
+many individual operations. A quick overview:</p>
 <ul>
-<li>file(str): Open file and read contents to a string</li>
-<li>env(str): Read the named environment variable</li>
-<li>script(str): Execute the string as a shell script. Returns a map with keys &quot;stdout&quot;, &quot;stderr&quot;, &quot;status&quot;</li>
-<li>command(str, str[]?): Execute the supplied command with the supplied arguments. Returns a map with keys &quot;stdout&quot;, &quot;stderr&quot;, &quot;status&quot;</li>
-<li>json(str): Parse the supplied JSON string into a map. Requires &quot;json-extension&quot; feature (default on)</li>
-<li>yaml(str): (alias yml) Parse the supplied YML string into a map. Requires &quot;yaml-extension&quot; feature (default on)</li>
+<li>Math operations: <code>+ - * / %</code> these operations are only valid with numeric types</li>
+<li>Equality: <code>== != &lt; &lt;= &gt; &gt;= &amp;&amp; ||</code></li>
+<li>Value setting: <code>=</code> the left side of this operation must be some identifier e.g. <code>{{ some.val.path = 'hello world!' }}</code></li>
+<li>String concatenation: <code>~</code> e.g. <code>{{ 'Hello' ~ ' ' ~ 'world!' }}</code> prints &quot;Hello world!&quot;</li>
+<li>Functions: <code>ident()</code> e.g. <code>{{ env('USER') }}</code> would retrieve the value of the environment variable &quot;USER&quot;.</li>
+<li>Filters: <code>|</code> e.g. <code>{{ 'hello world' | upper }}</code> would use the 'upper' filter to print &quot;HELLO WORLD&quot;</li>
 </ul>
+<p>As documentation is still in progress, see the <a href="./src/test/expressions.rs">expression tests</a> for examples of expression usage.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../templates/filters.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../templates/syntax.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../api.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../templates/filters.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -203,13 +195,13 @@ that map into a serialized YML string.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../templates/filters.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../templates/syntax.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../api.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../templates/filters.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
