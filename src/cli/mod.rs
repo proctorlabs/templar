@@ -9,15 +9,14 @@ use unstructured::Document;
 mod command;
 
 pub fn run() -> Result<()> {
-    match Command::parse()? {
-        Command::Expression {
-            ref text,
-            ref options,
-        } => run_expression(options, text),
-        Command::Template {
-            ref file,
-            ref options,
-        } => run_template(options, file),
+    let cmd = Command::parse()?;
+    match (&cmd.expr, &cmd.template) {
+        (Some(ref text), _) => run_expression(&cmd, text),
+        (_, Some(ref file)) => run_template(&cmd, file),
+        _ => {
+            eprintln!("One of --expr or --template is required!");
+            Ok(())
+        }
     }
 }
 
@@ -44,7 +43,7 @@ fn parse_file(path: &PathBuf) -> Result<Document> {
     })
 }
 
-fn build_context(options: &Options) -> Result<StandardContext> {
+fn build_context(options: &Command) -> Result<StandardContext> {
     let ctx = StandardContext::new();
     for file in options.dynamic_input.iter() {
         let doc = parse_file(file)?;
@@ -60,20 +59,20 @@ fn build_context(options: &Options) -> Result<StandardContext> {
     Ok(ctx)
 }
 
-fn run_expression(options: &Options, text: &str) -> Result<()> {
+fn run_expression(options: &Command, text: &str) -> Result<()> {
     let ctx = build_context(options)?;
     let expr = Templar::global().parse_expression(text)?;
     write_output(options, expr.render(&ctx)?)
 }
 
-fn run_template(options: &Options, file: &PathBuf) -> Result<()> {
+fn run_template(options: &Command, file: &PathBuf) -> Result<()> {
     let ctx = build_context(options)?;
     let template_contents = read_file(file)?;
     let template = Templar::global().parse_template(&template_contents)?;
     write_output(options, template.render(&ctx)?)
 }
 
-fn write_output(options: &Options, output: String) -> Result<()> {
+fn write_output(options: &Command, output: String) -> Result<()> {
     match options.output {
         Some(ref file) => {
             let mut f = File::create(file)?;

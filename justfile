@@ -44,6 +44,9 @@ build:
 run +args:
     cargo run --features bin -- {{args}}
 
+watch +args:
+    watchexec -w src just run -- {{args}}
+
 build-release:
     #!/usr/bin/env bash
     set -Eeou pipefail
