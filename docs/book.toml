@@ -4,3 +4,15 @@ language = "en"
 multilingual = false
 src = "src"
 title = "Templar"
+
+[rust]
+edition = "2018"
+
+[output.html]
+preferred-dark-theme = "coal"
+git-repository-url = "https://github.com/proctorlabs/templar"
+site-url = "https://proctorlabs.github.io/templar/"
+
+[output.html.fold]
+enable = true
+level = 1

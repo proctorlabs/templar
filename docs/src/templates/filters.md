@@ -1,4 +1,4 @@
-# Templar filters
+# Filters
 
 Filters are used to process the result of an expression in a template.
 

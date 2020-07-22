@@ -1,4 +1,4 @@
-# Templar functions
+# Functions
 
 Functions are used for pulling or creating data from other sources or using other methods.
 

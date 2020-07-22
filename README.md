@@ -33,7 +33,7 @@ The calculated result is {{ 100 * 5 / 10 }} {#- Prints '50' #}
 Today's guest list:
 {%- for person in ['Bob', 'Joe', 'Jen', 'Amy')] %}
 * {{ person }} will come to the party!
-{%- endif %} {#- This will loop everyone in the inline array above, but they array could also come from the context #}
+{%- endfor %} {#- This will loop everyone in the inline array above, but they array could also come from the context #}
 ```
 
 ## Another templating framework?
