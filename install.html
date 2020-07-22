@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="install.html" class="active"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli/intro.html"><strong aria-hidden="true">3.</strong> Command Line</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="cli/usage.html"><strong aria-hidden="true">3.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="templates/intro.html"><strong aria-hidden="true">4.</strong> Templating</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="templates/filters.html"><strong aria-hidden="true">4.1.</strong> Filters</a></li><li class="chapter-item expanded "><a href="templates/functions.html"><strong aria-hidden="true">4.2.</strong> Functions</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="install.html" class="active"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">3.</strong> Quick Start</a></li><li class="chapter-item expanded "><a href="cli/intro.html"><strong aria-hidden="true">4.</strong> Command Line</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="cli/usage.html"><strong aria-hidden="true">4.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="templates/intro.html"><strong aria-hidden="true">5.</strong> Templating</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="templates/filters.html"><strong aria-hidden="true">5.1.</strong> Filters</a></li><li class="chapter-item expanded "><a href="templates/functions.html"><strong aria-hidden="true">5.2.</strong> Functions</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -156,6 +156,19 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#installation" id="installation">Installation</a></h1>
+<p>We try to supply easy install methods for different platforms on a best-effort basis.</p>
+<h2><a class="header" href="#binary-install" id="binary-install">Binary Install</a></h2>
+<p>The primary way Templar is distributed is in binary form from <a href="https://github.com/proctorlabs/templar/releases">Github</a>.
+Binaries are available for a number of platforms and can be quickly installed via script. A simple script install can
+be like this:</p>
+<pre><code class="language-bash"># Make sure to pick the architecture and variant for your platform
+curl -sL https://github.com/proctorlabs/templar/releases/download/v0.3.0/templar-x86_64-unknown-linux-gnu.tar.xz |
+    tar -xJ -C /usr/local/bin &amp;&amp; chmod +x /usr/local/bin/templar
+</code></pre>
+<h2><a class="header" href="#cargo-source" id="cargo-source">Cargo (source)</a></h2>
+<p>If Cargo is available, templar can be quickly installed with this command:</p>
+<pre><code class="language-bash">cargo install --all-features templar
+</code></pre>
 
                     </main>
 
@@ -168,7 +181,7 @@
                         
 
                         
-                            <a rel="next" href="cli/intro.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="quickstart.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -186,7 +199,7 @@
                 
 
                 
-                    <a rel="next" href="cli/intro.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="quickstart.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

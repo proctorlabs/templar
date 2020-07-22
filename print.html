@@ -91,7 +91,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="install.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli/intro.html"><strong aria-hidden="true">3.</strong> Command Line</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="cli/usage.html"><strong aria-hidden="true">3.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="templates/intro.html"><strong aria-hidden="true">4.</strong> Templating</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="templates/filters.html"><strong aria-hidden="true">4.1.</strong> Filters</a></li><li class="chapter-item expanded "><a href="templates/functions.html"><strong aria-hidden="true">4.2.</strong> Functions</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="install.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="quickstart.html"><strong aria-hidden="true">3.</strong> Quick Start</a></li><li class="chapter-item expanded "><a href="cli/intro.html"><strong aria-hidden="true">4.</strong> Command Line</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="cli/usage.html"><strong aria-hidden="true">4.1.</strong> Usage</a></li></ol></li><li class="chapter-item expanded "><a href="templates/intro.html"><strong aria-hidden="true">5.</strong> Templating</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="templates/filters.html"><strong aria-hidden="true">5.1.</strong> Filters</a></li><li class="chapter-item expanded "><a href="templates/functions.html"><strong aria-hidden="true">5.2.</strong> Functions</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -158,9 +158,27 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
-<p>...</p>
+<p>Templar is a templating tool for the command line or available as a library for Rust. Templar
+attempts to be a lightweight tool that runs with very few dependencies, distributed in binary form
+for a number of architectures.</p>
 <h1><a class="header" href="#installation" id="installation">Installation</a></h1>
+<p>We try to supply easy install methods for different platforms on a best-effort basis.</p>
+<h2><a class="header" href="#binary-install" id="binary-install">Binary Install</a></h2>
+<p>The primary way Templar is distributed is in binary form from <a href="https://github.com/proctorlabs/templar/releases">Github</a>.
+Binaries are available for a number of platforms and can be quickly installed via script. A simple script install can
+be like this:</p>
+<pre><code class="language-bash"># Make sure to pick the architecture and variant for your platform
+curl -sL https://github.com/proctorlabs/templar/releases/download/v0.3.0/templar-x86_64-unknown-linux-gnu.tar.xz |
+    tar -xJ -C /usr/local/bin &amp;&amp; chmod +x /usr/local/bin/templar
+</code></pre>
+<h2><a class="header" href="#cargo-source" id="cargo-source">Cargo (source)</a></h2>
+<p>If Cargo is available, templar can be quickly installed with this command:</p>
+<pre><code class="language-bash">cargo install --all-features templar
+</code></pre>
+<h1><a class="header" href="#quick-start" id="quick-start">Quick Start</a></h1>
+<p>TBD</p>
 <h1><a class="header" href="#overview" id="overview">Overview</a></h1>
+<p>TBD</p>
 <h1><a class="header" href="#templar-cli" id="templar-cli">Templar CLI</a></h1>
 <p>The CLI can be used to run expressions or execute templates to STDOUT or an output file.</p>
 <h2><a class="header" href="#usage" id="usage">Usage</a></h2>
@@ -198,6 +216,8 @@ OPTIONS:
 ARGS:
     &lt;text&gt;    The expression to run
 </code></pre>
+<h1><a class="header" href="#templating" id="templating">Templating</a></h1>
+<p>TBD</p>
 <h1><a class="header" href="#templar-filters" id="templar-filters">Templar filters</a></h1>
 <p>Filters are used to process the result of an expression in a template.</p>
 <h2><a class="header" href="#overview-1" id="overview-1">Overview</a></h2>
