@@ -1,4 +1,4 @@
-name: Primary Build
+name: Continuous Build
 on: push
 
 jobs:
@@ -68,6 +68,8 @@ jobs:
         with:
           toolchain: stable
           target: '${{ matrix.target }}'
+          override: true
+          default: true
 
       - name: 'Build binary for ${{ matrix.target }}'
         uses: actions-rs/cargo@v1

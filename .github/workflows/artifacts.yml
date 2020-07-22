@@ -1,4 +1,4 @@
-name: Build Artifacts
+name: Publish Release
 on:
   push:
     tags: ['v**']
@@ -154,7 +154,7 @@ jobs:
         run: tar -cvJf 'templar-${{ matrix.target }}.tar.xz' templar
 
       - name: Upload Release Assets
-        id: upload-release-asset 
+        id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -184,7 +184,7 @@ jobs:
         run: zip 'templar-${{ matrix.target }}.zip' templar.exe
 
       - name: Upload Release Assets
-        id: upload-release-asset 
+        id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

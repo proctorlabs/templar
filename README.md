@@ -1,6 +1,9 @@
+![Continuous Build](https://github.com/proctorlabs/templar/workflows/Continuous%20Build/badge.svg)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/proctorlabs/templar)
 [![Crate](https://img.shields.io/crates/v/templar.svg)](https://crates.io/crates/templar)
-[![Documentation](https://img.shields.io/badge/docs-current-important.svg)](https://docs.rs/templar/)
-[![MIT License](https://img.shields.io/github/license/proctorlabs/templar.svg)](LICENSE)
+[![Book](https://img.shields.io/badge/book-current-important.svg)](https://proctorlabs.github.io/templar/)
+[![API Docs](https://img.shields.io/badge/docs-current-important.svg)](https://docs.rs/templar/)
+[![MIT License](https://img.shields.io/github/license/proctorlabs/templar.svg)](LICENSE-MIT)
 
 # Templar
 
