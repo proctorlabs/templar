@@ -1,84 +1,56 @@
 use super::*;
 use command::*;
-use std::fs::File;
+use context::build_context;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use templar::Templar;
-use unstructured::Document;
+use util::*;
 
 mod command;
+mod context;
+mod util;
 
 pub fn run() -> Result<()> {
-    let cmd = Command::parse()?;
-    match (&cmd.expr, &cmd.template) {
-        (Some(ref text), _) => run_expression(&cmd, text),
-        (_, Some(ref file)) => run_template(&cmd, file),
-        _ => {
-            eprintln!("One of --expr or --template is required!");
-            Ok(())
+    let cmdctx = CommandContext::new(Command::parse()?)?;
+    match (&cmdctx.cmd.expr, &cmdctx.cmd.template) {
+        (Some(ref text), None) => cmdctx.exec_expression(text),
+        (None, Some(ref file)) => cmdctx.exec_path(file),
+        (None, None) => cmdctx.exec_stdin(),
+        _ => unreachable!(), //Command:parse() has these as mutually exclusive
+    }
+}
+
+#[derive(Debug)]
+struct CommandContext {
+    cmd: Command,
+    ctx: StandardContext,
+}
+
+impl CommandContext {
+    fn new(cmd: Command) -> Result<Self> {
+        let ctx = build_context(&cmd)?;
+        Ok(CommandContext { cmd, ctx })
+    }
+
+    fn exec_expression(&self, text: &str) -> Result<()> {
+        self.render(Templar::global().parse_expression(text)?)
+    }
+
+    fn exec_path(&self, file: &PathBuf) -> Result<()> {
+        let template_contents = read_file(file)?;
+        self.render(Templar::global().parse_template(&template_contents)?)
+    }
+
+    fn exec_stdin(&self) -> Result<()> {
+        let template_contents = read_stdin()?;
+        self.render(Templar::global().parse_template(&template_contents)?)
+    }
+
+    fn render(&self, tpl: Template) -> Result<()> {
+        let output = tpl.render(&self.ctx)?;
+        match self.cmd.destination {
+            Some(ref file) => write_file(file, &output),
+            None => write_stdout(&output),
         }
     }
-}
-
-fn read_file(path: &PathBuf) -> Result<String> {
-    let mut file = File::open(path)?;
-    let mut result = String::new();
-    file.read_to_string(&mut result)?;
-    Ok(result)
-}
-
-fn parse_file(path: &PathBuf) -> Result<Document> {
-    let contents = read_file(path)?;
-    let ext: String = path
-        .extension()
-        .map(|ext| ext.to_string_lossy().to_lowercase())
-        .unwrap_or_default();
-    Ok(match &ext as &str {
-        "js" | "json" => serde_json::from_str(&contents).wrap()?,
-        "yml" | "yaml" => serde_yaml::from_str(&contents).wrap()?,
-        "xml" => serde_xml_rs::from_str(&contents)
-            .map_err(|e| TemplarError::RenderFailure(format!("{:?}", e)))?,
-        "toml" => toml::from_str(&contents).wrap()?,
-        _ => serde_json::from_str(&contents).wrap()?,
-    })
-}
-
-fn build_context(options: &Command) -> Result<StandardContext> {
-    let ctx = StandardContext::new();
-    for file in options.dynamic_input.iter() {
-        let doc = parse_file(file)?;
-        let tree: TemplateTree = Templar::global().parse(&doc)?;
-        ctx.set(tree)?;
-    }
-    for file in options.input.iter() {
-        ctx.merge(parse_file(file)?)?;
-    }
-    for setter in options.set.iter() {
-        ctx.set_path(&[&setter.0.to_string().into()], setter.1.to_string())?;
-    }
-    Ok(ctx)
-}
-
-fn run_expression(options: &Command, text: &str) -> Result<()> {
-    let ctx = build_context(options)?;
-    let expr = Templar::global().parse_expression(text)?;
-    write_output(options, expr.render(&ctx)?)
-}
-
-fn run_template(options: &Command, file: &PathBuf) -> Result<()> {
-    let ctx = build_context(options)?;
-    let template_contents = read_file(file)?;
-    let template = Templar::global().parse_template(&template_contents)?;
-    write_output(options, template.render(&ctx)?)
-}
-
-fn write_output(options: &Command, output: String) -> Result<()> {
-    match options.output {
-        Some(ref file) => {
-            let mut f = File::create(file)?;
-            f.write_all(output.as_bytes())?;
-        }
-        None => print!("{}", output),
-    };
-    Ok(())
 }

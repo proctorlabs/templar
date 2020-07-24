@@ -41,10 +41,15 @@ _validate:
 build:
     cargo build --features bin
 
-run +args:
+changelog:
+    #!/usr/bin/env bash
+    set -Eeou pipefail
+    git log --pretty=format:'%s' | grep '#' || true
+
+run +args="":
     cargo run --features bin -- {{args}}
 
-watch +args:
+watch +args="":
     watchexec -w src just run -- {{args}}
 
 build-release:

@@ -6,7 +6,8 @@ use structopt::StructOpt;
 
 impl Command {
     pub fn parse() -> Result<Self> {
-        Ok(Self::from_args())
+        let result = Self::from_args();
+        Ok(result)
     }
 }
 
@@ -20,7 +21,7 @@ impl Command {
 )]
 pub struct Command {
     /// File to parse and load into the templating context
-    #[structopt(short, number_of_values = 1, multiple = true)]
+    #[structopt(short, long, number_of_values = 1, multiple = true)]
     pub input: Vec<PathBuf>,
 
     /// File to parse and load into the templating context as a dynamic input
@@ -34,19 +35,19 @@ pub struct Command {
     pub dynamic_input: Vec<PathBuf>,
 
     /// Directly set a variable on the context
-    #[structopt(long, parse(try_from_str = parse_key_val), number_of_values = 1)]
+    #[structopt(short, long, parse(try_from_str = parse_key_val), number_of_values = 1)]
     pub set: Vec<(String, String)>,
 
-    /// Output to send the result to, defaults to stdout
-    #[structopt(short, parse(from_os_str))]
-    pub output: Option<PathBuf>,
+    /// Output to send the result to, defaults to stdout. If the template input is a directory, then this is required.
+    #[structopt(short = "o", long, parse(from_os_str))]
+    pub destination: Option<PathBuf>,
 
-    /// Expression to evaluate
-    #[structopt(short, conflicts_with = "template")]
+    /// Evaluate a single expression instead of a full template
+    #[structopt(short, long = "expression", name = "expression", conflicts_with = "template")]
     pub expr: Option<String>,
 
-    /// Template file(s) to open
-    #[structopt(short, conflicts_with = "expr", required_unless = "expr")]
+    /// Template file or directory to process
+    #[structopt(short, long, conflicts_with = "expr")]
     pub template: Option<PathBuf>,
 }
 
