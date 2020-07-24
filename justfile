@@ -44,7 +44,7 @@ build:
 changelog:
     #!/usr/bin/env bash
     set -Eeou pipefail
-    git log --pretty=format:'%s' | grep '#' || true
+    git log --pretty=format:'%d %s' --no-merges | grep -E '(tag:|#chg)' | sed 's/.*#chg /- /g' | sed 's/ (tag:/\n## Release/g' | sed 's/) .*/\n/g'
 
 run +args="":
     cargo run --features bin -- {{args}}
