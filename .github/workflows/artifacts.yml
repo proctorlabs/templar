@@ -20,6 +20,8 @@ jobs:
             build-options: [cross]
           - target: armv7-unknown-linux-gnueabihf
             build-options: [cross]
+          - target: armv7-unknown-linux-musleabihf
+            build-options: [cross]
 
     runs-on: 'ubuntu-latest'
 

@@ -38,6 +38,12 @@ jobs:
             use-cross: true
             run-tests: false
             ext: ''
+          - os: ubuntu-latest
+            toolchain: stable
+            target: armv7-unknown-linux-musleabihf
+            use-cross: true
+            run-tests: false
+            ext: ''
           - os: windows-latest
             toolchain: stable-msvc
             target: x86_64-pc-windows-msvc
