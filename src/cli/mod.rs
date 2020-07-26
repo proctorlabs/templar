@@ -1,9 +1,9 @@
 use super::*;
 use command::*;
 use context::build_context;
+use std::fs::{create_dir_all, remove_file};
 use std::io::prelude::*;
 use std::path::PathBuf;
-use std::fs::create_dir;
 use templar::Templar;
 use util::*;
 
@@ -41,21 +41,27 @@ impl CommandContext {
             let template_contents = read_file(file)?;
             self.render_file(Templar::global().parse_template(&template_contents)?)
         } else if file.is_dir() {
-            if self.cmd.recursive {
-                if self.cmd.destination.is_none()
-                    || !self.cmd.destination.as_ref().unwrap().is_dir()
-                {
-                    Err(TemplarError::RenderFailure(
-                        "When templating a directory, the destination must also be a directory"
-                            .into(),
-                    ))
-                } else {
-                    self.render_recursive(file, self.cmd.destination.as_ref().unwrap())
-                }
-            } else {
-                Err(TemplarError::RenderFailure(
+            match (
+                self.cmd.recursive,
+                self.cmd.destination.as_ref(),
+                self.cmd.force,
+            ) {
+                (false, _, _) => Err(TemplarError::RenderFailure(
                     "Recursive flag must be used to template a directory.".into(),
-                ))
+                )),
+                (true, None, _) => Err(TemplarError::RenderFailure(
+                    "Destination path required when templating into a directory".into(),
+                )),
+                (true, Some(d), true) => self.render_recursive(file, d),
+                (true, Some(d), false) => {
+                    if !d.exists() || d.is_dir() {
+                        self.render_recursive(file, d)
+                    } else {
+                        Err(TemplarError::RenderFailure(
+                            "Destination must be new path or existing directory. Use --force to allow overwriting existing content.".into(),
+                        ))
+                    }
+                }
             }
         } else {
             Err(TemplarError::RenderFailure("Template not found!".into()))
@@ -73,8 +79,10 @@ impl CommandContext {
 
     fn render_recursive(&self, src: &PathBuf, dst: &PathBuf) -> Result<()> {
         if src.is_dir() {
-            if !dst.exists() {
-                create_dir(dst)?;
+            if dst.is_file() && self.cmd.force {
+                remove_file(dst)?;
+            } else if !dst.exists() {
+                create_dir_all(dst)?;
             }
             for entry in src.read_dir()? {
                 let p = entry?.path();
@@ -90,6 +98,16 @@ impl CommandContext {
             let template_contents = read_file(src)?;
             let tpl = Templar::global().parse_template(&template_contents)?;
             let output = tpl.render(&self.ctx)?;
+            if dst.is_file() {
+                if self.cmd.force {
+                    remove_file(dst)?;
+                } else {
+                    return Err(TemplarError::RenderFailure(format!(
+                        "Destination file '{}' exists!",
+                        dst.file_name().unwrap_or_default().to_string_lossy()
+                    )));
+                }
+            }
             write_file(dst, &output)
         }
     }

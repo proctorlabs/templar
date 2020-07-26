@@ -6,8 +6,7 @@ use structopt::StructOpt;
 
 impl Command {
     pub fn parse() -> Result<Self> {
-        let result = Self::from_args();
-        Ok(result)
+        Ok(Self::from_args())
     }
 }
 
