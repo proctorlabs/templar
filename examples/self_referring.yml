@@ -1,3 +1,0 @@
----
-name: Self Referring Demo
-name_upper: "{{ name | upper }}"

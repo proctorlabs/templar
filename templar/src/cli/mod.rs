@@ -10,6 +10,7 @@ use util::*;
 mod command;
 mod context;
 mod util;
+mod cli_extensions;
 
 pub fn run() -> Result<()> {
     CommandContext::new(Command::parse()?)?.run()
@@ -17,14 +18,16 @@ pub fn run() -> Result<()> {
 
 #[derive(Debug)]
 struct CommandContext {
+    templar: Templar,
     cmd: Command,
     ctx: StandardContext,
 }
 
 impl CommandContext {
     fn new(cmd: Command) -> Result<Self> {
+        let templar = cli_extensions::build();
         let ctx = build_context(&cmd)?;
-        Ok(CommandContext { cmd, ctx })
+        Ok(CommandContext { templar, cmd, ctx })
     }
 
     fn run(&self) -> Result<()> {
@@ -39,7 +42,7 @@ impl CommandContext {
     fn exec_path(&self, file: &PathBuf) -> Result<()> {
         if file.is_file() {
             let template_contents = read_file(file)?;
-            self.render_file(Templar::global().parse_template(&template_contents)?)
+            self.render_file(self.templar.parse_template(&template_contents)?)
         } else if file.is_dir() {
             match (
                 self.cmd.recursive,
@@ -69,12 +72,12 @@ impl CommandContext {
     }
 
     fn exec_expression(&self, text: &str) -> Result<()> {
-        self.render_file(Templar::global().parse_expression(text)?)
+        self.render_file(self.templar.parse_expression(text)?)
     }
 
     fn exec_stdin(&self) -> Result<()> {
         let template_contents = read_stdin()?;
-        self.render_file(Templar::global().parse_template(&template_contents)?)
+        self.render_file(self.templar.parse_template(&template_contents)?)
     }
 
     fn render_recursive(&self, src: &PathBuf, dst: &PathBuf) -> Result<()> {
@@ -96,7 +99,7 @@ impl CommandContext {
             Ok(())
         } else {
             let template_contents = read_file(src)?;
-            let tpl = Templar::global().parse_template(&template_contents)?;
+            let tpl = self.templar.parse_template(&template_contents)?;
             let output = tpl.render(&self.ctx)?;
             if dst.is_file() {
                 if self.cmd.force {

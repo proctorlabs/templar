@@ -1,7 +1,7 @@
 # Rust files
 Cargo.lock
 **/*.rs.bk
-/target
+target/
 
 # Other misc files
 .cache

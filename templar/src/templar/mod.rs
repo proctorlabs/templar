@@ -11,6 +11,7 @@ pub use builder::TemplarBuilder;
 pub use template::{Template, TemplateTree};
 
 use std::collections::BTreeMap;
+use std::fmt;
 
 lazy_static! {
     static ref GLOBAL: Templar = Templar::default();
@@ -38,9 +39,16 @@ lazy_static! {
 /// assert_eq!(expression.exec(&context)?, 10 as i64);
 /// # Ok::<(), templar::TemplarError>(())
 /// ```
+
 pub struct Templar {
     pub(crate) functions: HashMap<String, Arc<functions::Function>>,
     pub(crate) filters: HashMap<String, Arc<filters::Filter>>,
+}
+
+impl fmt::Debug for Templar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Templar").finish()
+    }
 }
 
 impl Default for Templar {
