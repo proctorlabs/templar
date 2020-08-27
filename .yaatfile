@@ -1,0 +1,31 @@
+---
+.yaat:
+  #variables defined in "vars" are not interpreted and will be available as-is
+  vars:
+    math: "{{ 2 * 8 }}"
+
+  #variables defined in "options" are dynamically interpreted on usage
+  options:
+    git:
+      root: "{{ script('git rev-parse --show-toplevel') | key('stdout') | trim }}"
+    dyn:
+      math: "{{ 2 * 8 }}"
+      thing: false
+      not_math: "{{ math }}"
+
+#implicit script
+stuff: |-
+  echo '{{ git.root }}'
+
+#explicit script, exposes more options such as changing the interpreter
+thing:
+  depends_on: [stuff]
+  script: |-
+    echo '''{{ dyn | json('pretty') }}'''
+
+mdbook: |-
+  #!/usr/bin/env bash
+  set -Eeoxu pipefail
+
+  cd "{{ git.root }}"
+  mdbook serve docs
