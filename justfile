@@ -83,7 +83,7 @@ dry-run: _validate
 tag: _validate
     #!/usr/bin/env bash
     set -Eeou pipefail
-    git tag "v$(templar expression -i Cargo.toml '.[`package`][`version`]')"
+    git tag "v$(templar -i Cargo.toml -e '.[`package`][`version`]')"
     git push --tags
 
 publish: _validate
