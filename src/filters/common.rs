@@ -23,6 +23,10 @@ pub fn trim(value: Data, _: Data) -> Data {
     render_unwrap!(value).trim().into()
 }
 
+pub fn exists(value: Data, _: Data) -> Data {
+    (!value.is_empty()).into()
+}
+
 #[cfg(feature = "base64-extension")]
 pub fn base64(value: Data, args: Data) -> Data {
     let switch = match args.render() {
@@ -172,10 +176,9 @@ pub fn escape_html(value: Data, _: Data) -> Data {
 }
 
 pub fn require(value: Data, _: Data) -> Data {
-    match value.into_result() {
-        Ok(Document::Unit) => {}
-        Ok(other) => return other.into(),
-        Err(e) => return e.into(),
+    if value.is_empty() || matches!(value.to_result(), Ok(d) if d == &Document::Unit) {
+        TemplarError::RenderFailure("Required value is missing.".into()).into()
+    } else {
+        value
     }
-    TemplarError::RenderFailure("Required value is missing.".into()).into()
 }

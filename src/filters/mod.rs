@@ -52,6 +52,7 @@ builtin_filters! {
     "require": common::require;
     "default": common::default;
     "length": common::length;
+    "exists": common::exists;
     "lower": common::lower;
     "upper": common::upper;
     "trim": common::trim;
