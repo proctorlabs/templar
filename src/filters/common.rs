@@ -182,3 +182,31 @@ pub fn require(value: Data, _: Data) -> Data {
         value
     }
 }
+
+pub fn replace(value: Data, args: Data) -> Data {
+    let v = match value.into_result() {
+        Ok(i) => i.as_string().unwrap(),
+        Err(e) => return e.into(),
+    };
+
+    let arguments = match args.into_result() {
+        Ok(a) => a.as_seq(),
+        Err(e) => return e.into(),
+    };
+
+    match arguments {
+        Some(a) => {
+            if a.len() != 2 {
+                TemplarError::RenderFailure(
+                    "Provide an `old` and a `new` value for the repacements.".into(),
+                )
+                .into()
+            } else {
+                let old = a[0].as_string().unwrap();
+                let new = a[1].as_string().unwrap();
+                v.replace(&old, &new).into()
+            }
+        }
+        _ => Document::Unit.into(),
+    }
+}

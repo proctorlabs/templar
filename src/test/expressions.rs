@@ -85,6 +85,7 @@ test_expressions! {
     concat_op_filter: " 'hello ' ~ 'world' | upper" == "HELLO WORLD";
     concat_multiple: "'one ' ~ 'two ' ~ 'three'" == "one two three";
     concat_non_string: "'one' ~ 1 ~ true" == "one1true";
+    replace: "'this-is-a-thing'| replace('-','_') " == "this_is_a_thing";
 
     // encoding/decoding
     base64_encode_filter: "'Test' | base64" == "VGVzdA==";
