@@ -22,6 +22,7 @@ the upper case result "HELLO".
 - string: Forces the result into a string type, usually by rendering it
 - key(str): Retrieve the value of the specified key from the dictionary
 - escape_html: (alias 'e') Render the result and escape HTML characters
+- replace: Replace occurrences of a character in a string
 - yaml: (alias yml) Serialize the data into a YAML string. Requires"yaml-extension" feature (default on)
 - json(str?): Serialize the data into a JSON string. Set str to 'pretty' to print with indentation. Requires the "json-extension" feature (default on)
 - base64(str?): Encode the result as Base64. If the optional string parameter is set to "decode" then it will try to decode instead. Requires "base64-extension" feature (default on)
