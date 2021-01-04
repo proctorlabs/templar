@@ -63,6 +63,7 @@ builtin_filters! {
     "key": common::key;
     "escape_html": common::escape_html;
     "e": common::escape_html;
+    "replace": common::replace;
 
     #[cfg(feature = "yaml-extension")]
     "yaml": common::yaml;
