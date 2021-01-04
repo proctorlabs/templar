@@ -1,4 +1,4 @@
-name: ci
+name: Code Quality
 
 on:
   pull_request:
@@ -12,6 +12,7 @@ on:
 
 jobs:
   check:
+    name: Cargo Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -25,6 +26,7 @@ jobs:
           command: check
 
   test:
+    name: Cargo Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -38,6 +40,7 @@ jobs:
           command: test
 
   format:
+    name: Cargo Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -53,6 +56,7 @@ jobs:
           args: --all -- --check
 
   lint:
+    name: Clippy Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
