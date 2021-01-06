@@ -1,0 +1,23 @@
+[package]
+name = "templar_macros"
+authors = ["Phil Proctor <philliptproctor@gmail.com>"]
+description = "Lightweight, fast, and powerful templating engine"
+documentation = "https://docs.rs/templar"
+version = "0.4.2"
+edition = "2018"
+repository = "https://github.com/proctorlabs/templar"
+keywords = ["cli", "template", "templating", "handlebars", "jinja"]
+categories = ["template-engine"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+exclude = [".github/**", "docs/**"]
+workspace = "../"
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "1.0", features = ["full", "parsing"] }
+
+[lib]
+name = "templar_macros"
+proc-macro = true

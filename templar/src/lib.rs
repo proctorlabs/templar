@@ -100,6 +100,9 @@ Full API documentation can be found on [docs.rs](https://docs.rs/templar/)
 extern crate lazy_static;
 
 #[macro_use]
+extern crate templar_macros;
+
+#[macro_use]
 pub mod macros;
 
 pub(crate) use error::*;

@@ -30,7 +30,7 @@ _validate:
     rustup target add '{{ target }}'
 
     # DOGFOODING
-    cargo install templar --features bin
+    cargo install templar --all-features
 
     # Other stuff
     cargo install cargo-deb
@@ -39,7 +39,7 @@ _validate:
     cargo install mdbook
 
 build:
-    cargo build --features bin
+    cargo build --all-features
 
 changelog:
     #!/usr/bin/env bash
@@ -47,7 +47,7 @@ changelog:
     git log --pretty=format:'%d %s' --no-merges | grep -E '(tag:|#chg)' | sed 's/.*#chg /- /g' | sed 's/ (tag:/\n## Release/g' | sed 's/) .*/\n/g'
 
 run +args="":
-    cargo run --features bin -- {{args}}
+    cargo run --all-features -- {{args}}
 
 watch +args="":
     watchexec -w src just run -- {{args}}
@@ -56,7 +56,7 @@ build-release:
     #!/usr/bin/env bash
     set -Eeou pipefail
     echo 'Building for {{ target }}'
-    {{cargo}} build --features bin --release --target '{{ target }}'
+    {{cargo}} build --all-features --release --target '{{ target }}'
 
 package-tar: build-release
     #!/usr/bin/env bash

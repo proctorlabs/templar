@@ -11,16 +11,19 @@ pub fn length(value: Data, _: Data) -> Data {
     }
 }
 
-pub fn upper(value: Data, _: Data) -> Data {
-    render_unwrap!(value).to_uppercase().into()
+#[templar_filter]
+pub fn upper(filter_in: String) -> String {
+    filter_in.to_uppercase()
 }
 
-pub fn lower(value: Data, _: Data) -> Data {
-    render_unwrap!(value).to_lowercase().into()
+#[templar_filter]
+pub fn lower(filter_in: String) -> String {
+    filter_in.to_lowercase()
 }
 
-pub fn trim(value: Data, _: Data) -> Data {
-    render_unwrap!(value).trim().into()
+#[templar_filter]
+pub fn trim(filter_in: String) -> String {
+    filter_in.trim().into()
 }
 
 pub fn exists(value: Data, _: Data) -> Data {
@@ -28,22 +31,14 @@ pub fn exists(value: Data, _: Data) -> Data {
 }
 
 #[cfg(feature = "base64-extension")]
-pub fn base64(value: Data, args: Data) -> Data {
-    let switch = match args.render() {
-        Ok(s) => s.to_lowercase(),
-        Err(e) => return e.into(),
+#[templar_filter]
+pub fn base64(filter_in: String, method: String) -> std::result::Result<String, Box<dyn std::error::Error>> {
+    let method = method.to_lowercase();
+    let res: String = match method.as_ref() {
+        "decode" => str::from_utf8(&base64::decode(&filter_in)?)?.to_string(),
+        _ => base64::encode(&filter_in),
     };
-    let val = match value.render() {
-        Ok(s) => s,
-        Err(e) => return e.into(),
-    };
-    let res: String = match switch.as_ref() {
-        "decode" => str::from_utf8(&base64::decode(&val).unwrap_or_default())
-            .unwrap_or_default()
-            .into(),
-        _ => base64::encode(&val),
-    };
-    res.into()
+    Ok(res)
 }
 
 pub fn split(value: Data, args: Data) -> Data {
@@ -157,8 +152,9 @@ pub fn default(value: Data, args: Data) -> Data {
     }
 }
 
-pub fn escape_html(value: Data, _: Data) -> Data {
-    let input = render_unwrap!(value);
+
+#[templar_filter]
+pub fn escape_html(input: String) -> String {
     let len = input.len();
     let mut out = String::with_capacity(len + (len / 4));
     for c in input.chars() {
@@ -172,7 +168,7 @@ pub fn escape_html(value: Data, _: Data) -> Data {
             _ => out.push(c),
         }
     }
-    out.into()
+    out
 }
 
 pub fn require(value: Data, _: Data) -> Data {
@@ -183,30 +179,7 @@ pub fn require(value: Data, _: Data) -> Data {
     }
 }
 
-pub fn replace(value: Data, args: Data) -> Data {
-    let v = match value.into_result() {
-        Ok(i) => i.as_string().unwrap(),
-        Err(e) => return e.into(),
-    };
-
-    let arguments = match args.into_result() {
-        Ok(a) => a.as_seq(),
-        Err(e) => return e.into(),
-    };
-
-    match arguments {
-        Some(a) => {
-            if a.len() != 2 {
-                TemplarError::RenderFailure(
-                    "Provide an `old` and a `new` value for the repacements.".into(),
-                )
-                .into()
-            } else {
-                let old = a[0].as_string().unwrap();
-                let new = a[1].as_string().unwrap();
-                v.replace(&old, &new).into()
-            }
-        }
-        _ => Document::Unit.into(),
-    }
+#[templar_filter]
+pub fn replace(filter_in: String, old: String, new: String) -> String {
+    filter_in.replace(&old, &new)
 }

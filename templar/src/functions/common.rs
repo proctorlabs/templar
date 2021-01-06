@@ -7,34 +7,29 @@ use std::process::Command;
 use std::str;
 
 #[cfg(feature = "json-extension")]
-pub fn json(args: Data) -> Data {
-    let data_str = data_unwrap_into!(String: args);
-    Data::from_result(serde_json::from_str(&data_str).wrap())
+#[templar_function]
+pub fn json(content: String) -> Result<Document> {
+    serde_json::from_str(&content).wrap()
 }
 
 #[cfg(feature = "yaml-extension")]
-pub fn yaml(args: Data) -> Data {
-    let data_str = data_unwrap_into!(String: args);
-    Data::from_result(serde_yaml::from_str(&data_str).wrap())
+#[templar_function]
+pub fn yaml(content: String) -> Result<Document> {
+    serde_yaml::from_str(&content).wrap()
 }
 
-pub fn file(args: Data) -> Data {
-    let path: PathBuf = data_unwrap_into!(String: args).into();
-    match File::open(path) {
-        Ok(mut f) => {
-            let mut result = String::new();
-            match f.read_to_string(&mut result) {
-                Ok(_) => result.into(),
-                Err(e) => TemplarError::from(e).into(),
-            }
-        }
-        Err(e) => TemplarError::from(e).into(),
-    }
+#[templar_function]
+pub fn file(path: String) -> Result<String> {
+    let path: PathBuf = PathBuf::from(path);
+    let mut file = File::open(path)?;
+    let mut result = String::new();
+    file.read_to_string(&mut result)?;
+    Ok(result)
 }
 
-pub fn env(args: Data) -> Data {
-    let env_name = data_unwrap_into!(String: args);
-    std::env::var(env_name).unwrap_or_default().into()
+#[templar_function]
+pub fn env(env_var: String) -> Result<String> {
+    std::env::var(env_var).wrap()
 }
 
 pub fn script(args: Data) -> Data {
