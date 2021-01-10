@@ -15,7 +15,7 @@ impl Default for SharedContext {
 impl SharedContext {
     /// Create a new empty shared context
     pub fn new() -> Self {
-        SharedContext(Arc::new(RwLock::new(ContextMap::new(Document::Unit))))
+        SharedContext(Arc::new(RwLock::new(ContextMap::new(Document::Null))))
     }
 }
 

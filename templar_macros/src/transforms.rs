@@ -4,13 +4,10 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::*;
 
-use syn::{
-    FnArg, Ident, LitInt, Pat, PatIdent, ReturnType, Type,
-    TypePath,
-};
+use syn::{FnArg, Ident, LitInt, Pat, PatIdent, ReturnType, Type, TypePath};
 
 macro_rules! data_types {
-    ( $( $type:ident ( $( $tystr:tt )* ) , )* ) => {
+    ( $( $type:ident { $( $tail:tt )* } ( $( $tystr:tt )* ) , )* ) => {
         #[derive(Debug)]
         enum DataType {
             $( $type (Ident), )*
@@ -35,7 +32,7 @@ macro_rules! data_types {
                 match self {
                     $(
                         DataType:: $type (_) => quote! {
-                            Document :: $type
+                            Document :: $( $tail )*
                         },
                     )*
                 }.into()
@@ -45,20 +42,20 @@ macro_rules! data_types {
 }
 
 data_types! {
-    String  ("String" | "&str"),
-    Char    ("char"),
-    F64     ("f64"),
-    F32     ("f32"),
-    I128    ("i128" | "isize"),
-    I64     ("i64"),
-    I32     ("i32"),
-    I16     ("i16"),
-    I8      ("i8"),
-    U128    ("u128" | "usize"),
-    U64     ("u64"),
-    U32     ("u32"),
-    U16     ("u16"),
-    U8      ("u8"),
+    String  {String} ("String" | "&str"),
+    Char    {Char} ("char"),
+    F64     {Number} ("f64"),
+    F32     {Number} ("f32"),
+    I128    {Number} ("i128" | "isize"),
+    I64     {Number} ("i64"),
+    I32     {Number} ("i32"),
+    I16     {Number} ("i16"),
+    I8      {Number} ("i8"),
+    U128    {Number} ("u128" | "usize"),
+    U64     {Number} ("u64"),
+    U32     {Number} ("u32"),
+    U16     {Number} ("u16"),
+    U8      {Number} ("u8"),
 }
 
 macro_rules! fail {
@@ -148,7 +145,7 @@ pub fn impl_filter(item_fn: &syn::ItemFn) -> TokenStream {
     let arg_count: LitInt = LitInt::new(&args.len().to_string(), item_fn.sig.ident.span());
 
     let arg_condition = if args.len() > 1 {
-        quote!{
+        quote! {
             let mut filter_args: Vec<Document> = match filter_args.into_result() {
                 Ok(Document::Seq(val)) => val,
                 Err(e) => return e.into(),
@@ -160,19 +157,19 @@ pub fn impl_filter(item_fn: &syn::ItemFn) -> TokenStream {
             }
         }
     } else {
-        quote!{}
+        quote! {}
     };
 
     let mut varset_tokens: Vec<TokenStream2> = vec![];
 
-    varset_tokens.push(quote!{
+    varset_tokens.push(quote! {
         let #filter_in = match filter_in {
             #filter_in_type (val) => val.into(),
             _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into()
         };
     });
 
-    match args.len() { 
+    match args.len() {
         l if l > 1 => {
             for (arg, data_type) in args.iter().zip(data_types.iter()) {
                 let dty = data_type.type_token();
@@ -244,7 +241,6 @@ pub fn impl_filter(item_fn: &syn::ItemFn) -> TokenStream {
     gen.into()
 }
 
-
 pub fn impl_function(item_fn: &syn::ItemFn) -> TokenStream {
     let mut orig_fn = item_fn.clone();
 
@@ -278,7 +274,7 @@ pub fn impl_function(item_fn: &syn::ItemFn) -> TokenStream {
     let arg_count: LitInt = LitInt::new(&args.len().to_string(), item_fn.sig.ident.span());
 
     let arg_condition = if args.len() > 1 {
-        quote!{
+        quote! {
             let mut args: Vec<Document> = match args {
                 Document::Seq(val) => val,
                 _ => return TemplarError::RenderFailure("Unexpected execution, arguments must be a sequence".to_string()).into(),
@@ -289,12 +285,12 @@ pub fn impl_function(item_fn: &syn::ItemFn) -> TokenStream {
             }
         }
     } else {
-        quote!{}
+        quote! {}
     };
 
     let mut varset_tokens: Vec<TokenStream2> = vec![];
 
-    match args.len() { 
+    match args.len() {
         l if l > 1 => {
             for (arg, data_type) in args.iter().zip(data_types.iter()) {
                 let dty = data_type.type_token();

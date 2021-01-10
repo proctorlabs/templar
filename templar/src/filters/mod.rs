@@ -74,4 +74,8 @@ builtin_filters! {
     "json": common::json;
     #[cfg(feature = "base64-extension")]
     "base64": common::base64;
+    #[cfg(feature = "base64-extension")]
+    "b64decode": common::b64decode;
+    #[cfg(feature = "base64-extension")]
+    "b64encode": common::b64encode;
 }

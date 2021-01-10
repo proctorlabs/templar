@@ -103,7 +103,7 @@ macro_rules! simple_pipe {
 
 macro_rules! number {
     ($doc:ident) => {
-        match $doc.as_i64() {
+        match $doc.cast::<i64>() {
             Some(i) => i,
             None => {
                 return TemplarError::RenderFailure("Math operations require numeric types".into())
@@ -119,8 +119,8 @@ simple_pipe! {
     divide(l, r) -> { number!(l) / number!(r) };
     multiply(l, r) -> { number!(l) * number!(r) };
     modulus(l, r) -> { number!(l) % number!(r) };
-    and(l, r) -> { l.as_bool().unwrap_or_default() && r.as_bool().unwrap_or_default() };
-    or(l, r) -> { l.as_bool().unwrap_or_default() || r.as_bool().unwrap_or_default() };
+    and(l, r) -> { l.cast::<bool>().unwrap_or_default() && r.cast::<bool>().unwrap_or_default() };
+    or(l, r) -> { l.cast::<bool>().unwrap_or_default() || r.cast::<bool>().unwrap_or_default() };
     equals(l, r) -> { l == r };
     not_equals(l, r) -> { l != r };
     greater_than(l, r) -> { l > r };

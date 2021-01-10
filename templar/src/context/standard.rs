@@ -14,7 +14,7 @@ impl Default for StandardContext {
 impl StandardContext {
     /// Create a new empty standard context
     pub fn new() -> Self {
-        StandardContext(Rc::new(RefCell::new(ContextMap::new(Document::Unit))))
+        StandardContext(Rc::new(RefCell::new(ContextMap::new(Document::Null))))
     }
 }
 

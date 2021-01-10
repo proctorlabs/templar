@@ -12,7 +12,7 @@ fn function_attr(test: i32, _test2: i32) -> Result<String, Box<dyn std::error::E
 
 #[test]
 fn basic() -> Result<(), Box<dyn std::error::Error>> {
-    function_attr(Document::I32(10).into(), Document::I32(10).into()).into_result()?;
+    function_attr(10.into(), 10.into()).into_result()?;
     __function_attr_inner__(10, 10)?;
     Ok(())
 }

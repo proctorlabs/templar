@@ -35,7 +35,7 @@ impl<'a> Data {
     pub fn render(self) -> Result<String> {
         match (self.error, self.doc) {
             (Some(e), _) => Err(e),
-            (_, Some(Document::Unit)) => Ok("null".into()),
+            (_, Some(Document::Null)) => Ok("null".into()),
             (_, Some(doc)) => Ok(doc.to_string()),
             _ => Ok("".into()),
         }

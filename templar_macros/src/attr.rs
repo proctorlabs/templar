@@ -12,7 +12,11 @@ pub(crate) struct BindingAttrValues {
 
 impl Parse for BindingAttrValues {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        Ok(BindingAttrValues { ident: input.parse()?, equal: input.parse()?, val: input.parse()? })
+        Ok(BindingAttrValues {
+            ident: input.parse()?,
+            equal: input.parse()?,
+            val: input.parse()?,
+        })
     }
 }
 

@@ -32,13 +32,28 @@ pub fn exists(value: Data, _: Data) -> Data {
 
 #[cfg(feature = "base64-extension")]
 #[templar_filter]
-pub fn base64(filter_in: String, method: String) -> std::result::Result<String, Box<dyn std::error::Error>> {
+pub fn base64(
+    filter_in: String,
+    method: String,
+) -> std::result::Result<String, Box<dyn std::error::Error>> {
     let method = method.to_lowercase();
     let res: String = match method.as_ref() {
         "decode" => str::from_utf8(&base64::decode(&filter_in)?)?.to_string(),
         _ => base64::encode(&filter_in),
     };
     Ok(res)
+}
+
+#[cfg(feature = "base64-extension")]
+#[templar_filter]
+pub fn b64encode(in_string: String) -> std::result::Result<String, Box<dyn std::error::Error>> {
+    Ok(str::from_utf8(&base64::decode(&in_string)?)?.to_string())
+}
+
+#[cfg(feature = "base64-extension")]
+#[templar_filter]
+pub fn b64decode(in_string: String) -> std::result::Result<String, Box<dyn std::error::Error>> {
+    Ok(base64::encode(&in_string))
 }
 
 pub fn split(value: Data, args: Data) -> Data {
@@ -90,7 +105,7 @@ pub fn index(value: Data, args: Data) -> Data {
     if let Some(i) = arg {
         match value.into_result() {
             Ok(Document::Seq(s)) => s.get(i).cloned().unwrap_or_default().into(),
-            _ => Document::Unit.into(),
+            _ => Document::Null.into(),
         }
     } else {
         TemplarError::RenderFailure("Cannot index with non real value".into()).into()
@@ -152,7 +167,6 @@ pub fn default(value: Data, args: Data) -> Data {
     }
 }
 
-
 #[templar_filter]
 pub fn escape_html(input: String) -> String {
     let len = input.len();
@@ -172,7 +186,7 @@ pub fn escape_html(input: String) -> String {
 }
 
 pub fn require(value: Data, _: Data) -> Data {
-    if value.is_empty() || matches!(value.to_result(), Ok(d) if d == &Document::Unit) {
+    if value.is_empty() || matches!(value.to_result(), Ok(d) if d == &Document::Null) {
         TemplarError::RenderFailure("Required value is missing.".into()).into()
     } else {
         value
