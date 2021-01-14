@@ -1,9 +1,10 @@
 use super::*;
-use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
-/// A single-threaded context
+use {parking_lot::RwLock, std::sync::Arc};
+
+/// This context type can be shared between threads safely
 #[derive(Debug, Clone)]
-pub struct StandardContext(Rc<RefCell<ContextMap>>);
+pub struct StandardContext(Arc<RwLock<ContextMap>>);
 
 impl Default for StandardContext {
     fn default() -> Self {
@@ -12,19 +13,19 @@ impl Default for StandardContext {
 }
 
 impl StandardContext {
-    /// Create a new empty standard context
+    /// Create a new empty shared context
     pub fn new() -> Self {
-        StandardContext(Rc::new(RefCell::new(ContextMap::new(InnerData::Null))))
+        StandardContext(Arc::new(RwLock::new(ContextMap::new(InnerData::Null))))
     }
 }
 
 impl Context for StandardContext {
     fn set_path_inner(&self, path: &[&InnerData], doc: ContextMapValue) -> Result<()> {
-        self.0.borrow_mut().set(doc, path)
+        self.0.write().set(doc, path)
     }
 
     fn get_path_inner(&self, path: &[&InnerData], ctx: &impl Context) -> Data {
-        self.0.borrow().exec(ctx, path)
+        self.0.read().exec(ctx, path)
     }
 
     fn wrap(&self) -> ContextWrapper {

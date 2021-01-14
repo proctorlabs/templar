@@ -120,8 +120,8 @@ pub use {
     unstructured::Document,
 };
 
-#[cfg(feature = "shared-context")]
-pub use context::SharedContext;
+// #[cfg(feature = "shared-context")]
+// pub use context::SharedContext;
 
 pub mod error;
 

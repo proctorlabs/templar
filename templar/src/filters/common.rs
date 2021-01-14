@@ -5,7 +5,7 @@ use std::str;
 
 pub fn length(value: Data, _: Data) -> Data {
     match value .into_inner() {
-        InnerData::Err(e) => return e.into(),
+        InnerData::Err(e) => e.into(),
         InnerData::Seq(arr) => (arr.len() as u64).into(),
         InnerData::String(s) => (s.chars().count() as u64).into(),
         _ => 1u64.into(),

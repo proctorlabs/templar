@@ -134,7 +134,7 @@ fn if_then(ctx: &ContextWrapper, cnd: &Node, p: &Node, n: &Node) -> Data {
     match cnd {
         InnerData::Bool(true) => p.exec(ctx),
         InnerData::Bool(false) => n.exec(ctx),
-        InnerData::Err(e) => Data::new(InnerData::Err(e.clone())),
+        InnerData::Err(e) => Data::new(InnerData::Err(e)),
         _ => TemplarError::RenderFailure("If condition must evaluate to boolean!".into()).into(),
     }
 }
