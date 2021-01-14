@@ -25,7 +25,6 @@ lazy_static! {
 ///
 /// ```
 /// use templar::*;
-/// use unstructured::Document;
 ///
 /// let context = StandardContext::new();
 ///
@@ -35,7 +34,7 @@ lazy_static! {
 ///
 /// // parse and execute an expression, this can be converted to most native types
 /// let expression = Templar::global().parse_expression("5 + 5")?;
-/// assert_eq!(expression.exec(&context)?, 10 as i64);
+/// assert_eq!(*expression.exec(&context), 10 as i64);
 /// # Ok::<(), templar::TemplarError>(())
 /// ```
 pub struct Templar {
@@ -60,13 +59,12 @@ impl Templar {
     ///
     /// ```
     /// # use templar::*;
-    /// # use unstructured::Document;
     /// # use std::convert::TryInto;
     ///
     /// # let context = StandardContext::new();
     ///
     /// let template: Template = Templar::global().parse("{{ [5, 8, 3] | index(0) }}")?;
-    /// assert_eq!(template.exec(&context)?, 5 as i64);
+    /// assert_eq!(*template.exec(&context), 5 as i64);
     /// # Ok::<(), templar::TemplarError>(())
     /// ```
     #[inline]
@@ -130,37 +128,37 @@ impl Parseable<Template> for &str {
     }
 }
 
-impl Parseable<Template> for &Document {
+impl Parseable<Template> for &InnerData {
     #[inline]
     fn parse_into(t: Self, templar: &Templar) -> Result<Template> {
         Ok(match t {
-            Document::String(s) => templar.parse_template(&s)?,
-            Document::Newtype(d) => templar.parse(d.as_ref())?,
+            InnerData::String(s) => templar.parse_template(&s)?,
+            InnerData::Newtype(d) => templar.parse(d.as_ref())?,
             _ => Node::Data(t.clone().into()).into(),
         })
     }
 }
 
-impl Parseable<TemplateTree> for &Document {
+impl Parseable<TemplateTree> for &InnerData {
     #[inline]
     fn parse_into(doc: Self, templar: &Templar) -> Result<TemplateTree> {
         let default_context = StandardContext::new();
         Ok(match doc {
-            Document::Newtype(d) => templar.parse(d.as_ref())?,
-            Document::Seq(s) => TemplateTree::Sequence(Arc::new(
+            InnerData::Newtype(d) => templar.parse(d.as_ref())?,
+            InnerData::Seq(s) => TemplateTree::Sequence(Arc::new(
                 s.iter()
                     .map(|i| Ok(templar.parse(i)?))
                     .collect::<Result<Vec<TemplateTree>>>()?,
             )),
-            Document::Map(map) => TemplateTree::Mapping(Arc::new(
+            InnerData::Map(map) => TemplateTree::Mapping(Arc::new(
                 map.iter()
                     .map(|(k, v)| {
                         Ok((
-                            templar.parse::<Self, Template>(k)?.exec(&default_context)?,
+                            templar.parse::<Self, Template>(k)?.exec(&default_context).into_inner(),
                             templar.parse(v)?,
                         ))
                     })
-                    .collect::<Result<BTreeMap<Document, TemplateTree>>>()?,
+                    .collect::<Result<BTreeMap<InnerData, TemplateTree>>>()?,
             )),
             _ => TemplateTree::Template(templar.parse(doc)?),
         })
@@ -169,7 +167,7 @@ impl Parseable<TemplateTree> for &Document {
 
 mod private {
     pub trait Seal {}
-    impl Seal for &unstructured::Document {}
+    impl Seal for &crate::execution::InnerData {}
     impl Seal for &String {}
     impl Seal for &str {}
 }

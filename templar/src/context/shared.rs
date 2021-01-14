@@ -15,16 +15,16 @@ impl Default for SharedContext {
 impl SharedContext {
     /// Create a new empty shared context
     pub fn new() -> Self {
-        SharedContext(Arc::new(RwLock::new(ContextMap::new(Document::Null))))
+        SharedContext(Arc::new(RwLock::new(ContextMap::new(InnerData::Null))))
     }
 }
 
 impl Context for SharedContext {
-    fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
+    fn set_path_inner(&self, path: &[&InnerData], doc: ContextMapValue) -> Result<()> {
         self.0.write().set(doc, path)
     }
 
-    fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data {
+    fn get_path_inner(&self, path: &[&InnerData], ctx: &impl Context) -> Data {
         self.0.read().exec(ctx, path)
     }
 

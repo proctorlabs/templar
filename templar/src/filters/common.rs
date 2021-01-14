@@ -4,9 +4,10 @@ use crate::*;
 use std::str;
 
 pub fn length(value: Data, _: Data) -> Data {
-    match data_unwrap!(value) {
-        Document::Seq(arr) => (arr.len() as u64).into(),
-        Document::String(s) => (s.chars().count() as u64).into(),
+    match value .into_inner() {
+        InnerData::Err(e) => return e.into(),
+        InnerData::Seq(arr) => (arr.len() as u64).into(),
+        InnerData::String(s) => (s.chars().count() as u64).into(),
         _ => 1u64.into(),
     }
 }
@@ -68,8 +69,8 @@ pub fn split(value: Data, args: Data) -> Data {
         _ => "\n".to_string(),
     };
     match value.into_result() {
-        Ok(Document::String(s)) => Document::Seq(s.split(&delim).map(|s| s.into()).collect()),
-        _ => Document::Seq(vec![]),
+        Ok(d) => InnerData::Seq(d.render().unwrap_or_default().split(&delim).map(|s| s.into()).collect()),
+        _ => InnerData::Seq(vec![]),
     }
     .into()
 }
@@ -85,15 +86,16 @@ pub fn join(value: Data, args: Data) -> Data {
         }
         _ => "\n".to_string(),
     };
-    match value.into_result() {
-        Ok(Document::Seq(s)) => s
+    match value.into_inner() {
+        InnerData::Seq(s) => s
             .iter()
             .map(|i| i.to_string())
             .collect::<Vec<String>>()
             .join(&delim)
             .into(),
-        Ok(v) => v.into(),
-        Err(e) => e.into(),
+        InnerData::Err(e) => e.into(),
+        v => v.into(),
+        
     }
 }
 
@@ -103,9 +105,9 @@ pub fn index(value: Data, args: Data) -> Data {
         Err(e) => return e.into(),
     };
     if let Some(i) = arg {
-        match value.into_result() {
-            Ok(Document::Seq(s)) => s.get(i).cloned().unwrap_or_default().into(),
-            _ => Document::Null.into(),
+        match value.into_inner() {
+            InnerData::Seq(s) => s.get(i).cloned().unwrap_or_default().into(),
+            _ => InnerData::Null.into(),
         }
     } else {
         TemplarError::RenderFailure("Cannot index with non real value".into()).into()
@@ -114,8 +116,9 @@ pub fn index(value: Data, args: Data) -> Data {
 
 #[cfg(feature = "json-extension")]
 pub fn json(value: Data, args: Data) -> Data {
-    match value.into_result() {
-        Ok(val) => {
+    match value.into_inner() {
+        InnerData::Err(e) => e.into(),
+        val => {
             let arg = args.render().unwrap_or_default();
             match arg.as_str() {
                 "pretty" => serde_json::to_string_pretty(&val)
@@ -124,15 +127,14 @@ pub fn json(value: Data, args: Data) -> Data {
                 _ => serde_json::to_string(&val).unwrap_or_default().into(),
             }
         }
-        Err(e) => e.into(),
     }
 }
 
 #[cfg(feature = "yaml-extension")]
 pub fn yaml(value: Data, _: Data) -> Data {
-    match value.into_result() {
-        Ok(val) => serde_yaml::to_string(&val).unwrap_or_default().into(),
-        Err(e) => e.into(),
+    match value.into_inner() {
+        InnerData::Err(e) => e.into(),
+        val => serde_yaml::to_string(&val).unwrap_or_default().into(),
     }
 }
 
@@ -150,8 +152,8 @@ pub fn key(value: Data, args: Data) -> Data {
         )
         .into();
     }
-    match value.into_result() {
-        Ok(Document::Map(map)) => map[&args.into_result().unwrap()].clone().into(),
+    match value.into_inner() {
+        InnerData::Map(map) => map[&args.into_result().unwrap()].clone().into(),
         _ => TemplarError::RenderFailure(
             "Attempted to retrieve a key on a value that is not a map".into(),
         )
@@ -186,7 +188,7 @@ pub fn escape_html(input: String) -> String {
 }
 
 pub fn require(value: Data, _: Data) -> Data {
-    if value.is_empty() || matches!(value.to_result(), Ok(d) if d == &Document::Null) {
+    if value.is_empty() || matches!(value.to_result(), Ok(d) if d == &InnerData::Null) {
         TemplarError::RenderFailure("Required value is missing.".into()).into()
     } else {
         value

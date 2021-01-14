@@ -18,20 +18,20 @@ pub use shared::SharedContext;
 /// The primary context trait
 pub trait Context: Sized {
     #[doc(hidden)]
-    fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()>;
+    fn set_path_inner(&self, path: &[&InnerData], doc: ContextMapValue) -> Result<()>;
     #[doc(hidden)]
-    fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data;
+    fn get_path_inner(&self, path: &[&InnerData], ctx: &impl Context) -> Data;
     #[doc(hidden)]
     fn wrap(&self) -> ContextWrapper;
 
     /// Merge the data into the root context
     #[inline]
-    fn merge<T: Into<Document>>(&self, doc: T) -> Result<()> {
+    fn merge<T: Into<InnerData>>(&self, doc: T) -> Result<()> {
         match doc.into() {
-            Document::Map(m) => {
+            InnerData::Map(m) => {
                 for (k, v) in m.into_iter() {
-                    let orig = self.get_path(&[&k]).into_result().unwrap_or_default();
-                    self.set_path(&[&k], orig + v)?;
+                    let orig = self.get_path(&[&k]).into_result()?;
+                    self.set_path(&[&k], orig.into_inner() + v)?;
                 }
                 Ok(())
             }
@@ -43,12 +43,12 @@ pub trait Context: Sized {
 
     /// Merge the data into the context at the specified path
     #[inline]
-    fn merge_path<T>(&self, path: &[&Document], doc: T) -> Result<()>
+    fn merge_path<T>(&self, path: &[&InnerData], doc: T) -> Result<()>
     where
-        Document: From<T>,
+        InnerData: From<T>,
     {
         let orig = self.get_path(path).into_result()?;
-        self.set_path::<Document>(path, orig + Document::from(doc))?;
+        self.set_path::<InnerData>(path, orig.into_inner() + InnerData::from(doc))?;
         Ok(())
     }
 
@@ -66,7 +66,7 @@ pub trait Context: Sized {
 
     /// Set the value at the specified path
     #[inline]
-    fn set_path<T: Into<ContextMapValue>>(&self, path: &[&Document], doc: T) -> Result<()> {
+    fn set_path<T: Into<ContextMapValue>>(&self, path: &[&InnerData], doc: T) -> Result<()> {
         self.set_path_inner(path, doc.into())
     }
 
@@ -78,7 +78,7 @@ pub trait Context: Sized {
 
     /// Get the value at the path
     #[inline]
-    fn get_path(&self, path: &[&Document]) -> Data {
+    fn get_path(&self, path: &[&InnerData]) -> Data {
         self.get_path_inner(path, self)
     }
 }
@@ -92,7 +92,7 @@ pub enum ContextWrapper<'a> {
 }
 
 impl<'a> Context for ContextWrapper<'a> {
-    fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
+    fn set_path_inner(&self, path: &[&InnerData], doc: ContextMapValue) -> Result<()> {
         match self {
             Self::Standard(c) => c.set_path_inner(path, doc),
             #[cfg(feature = "shared-context")]
@@ -101,13 +101,15 @@ impl<'a> Context for ContextWrapper<'a> {
         }
     }
 
-    fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data {
-        match self {
+    fn get_path_inner(&self, path: &[&InnerData], ctx: &impl Context) -> Data {
+        let res = match self {
             Self::Standard(c) => c.get_path_inner(path, ctx),
             #[cfg(feature = "shared-context")]
             Self::Shared(c) => c.get_path_inner(path, ctx),
             Self::Scope(c) => c.get_path_inner(path, ctx),
-        }
+        };
+        println!("---> {:?}", res);
+        res
     }
 
     fn wrap(&self) -> ContextWrapper {

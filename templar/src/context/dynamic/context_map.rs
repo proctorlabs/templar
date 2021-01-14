@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug, Default)]
 pub struct ContextMap {
-    root: BTreeMap<Document, ContextMapValue>,
+    root: BTreeMap<InnerData, ContextMapValue>,
 }
 
 impl ContextMap {
@@ -12,9 +12,10 @@ impl ContextMap {
         result
     }
 
-    pub fn set<T: Into<ContextMapValue>>(&mut self, value: T, path: &[&Document]) -> Result<()> {
+    pub fn set<T: Into<ContextMapValue>>(&mut self, value: T, path: &[&InnerData]) -> Result<()> {
         if path.is_empty() {
             let val: ContextMapValue = value.into();
+            println!("{:?}", val);
             if let ContextMapValue::Map(map) = val {
                 for (k, v) in map.into_iter() {
                     self.root.insert(k, v);
@@ -37,7 +38,7 @@ impl ContextMap {
         Ok(())
     }
 
-    pub fn exec(&self, ctx: &impl Context, path: &[&Document]) -> Data {
+    pub fn exec(&self, ctx: &impl Context, path: &[&InnerData]) -> Data {
         if path.is_empty() {
             let copy = ContextMapValue::Map(self.root.clone());
             return copy.exec(ctx);
@@ -59,7 +60,7 @@ impl From<TemplateTree> for ContextMapValue {
                 ContextMapValue::Seq(result)
             }
             TemplateTree::Mapping(m) => {
-                let result: BTreeMap<Document, ContextMapValue> = m
+                let result: BTreeMap<InnerData, ContextMapValue> = m
                     .iter()
                     .map(|(k, v)| (k.clone(), v.clone().into()))
                     .collect();
@@ -79,7 +80,7 @@ impl ContextMapValue {
         drop(replace(self, val.into()));
     }
 
-    fn get_or_add_key(&mut self, key: &Document) -> &mut ContextMapValue {
+    fn get_or_add_key(&mut self, key: &InnerData) -> &mut ContextMapValue {
         match self {
             ContextMapValue::Map(ref mut map) => map
                 .entry(key.clone())
@@ -96,20 +97,20 @@ impl ContextMapValue {
         match self {
             ContextMapValue::Node(node) => node.exec(ctx),
             ContextMapValue::Map(map) => {
-                let mut result: BTreeMap<Document, Document> = BTreeMap::new();
+                let mut result: BTreeMap<InnerData, InnerData> = BTreeMap::new();
                 for (k, v) in map.iter() {
                     match v.exec(ctx).into_result() {
-                        Ok(d) => result.insert(k.clone(), d),
+                        Ok(d) => result.insert(k.clone(), d.into_inner()),
                         Err(e) => return e.into(),
                     };
                 }
                 result.into()
             }
             ContextMapValue::Seq(s) => {
-                let result: Result<Vec<Document>> =
-                    s.iter().map(|v| v.exec(ctx).into_result()).collect();
+                let result: Result<Vec<InnerData>> =
+                    s.iter().map(|v| Ok(v.exec(ctx).into_result()?.into_inner())).collect();
                 match result {
-                    Ok(s) => s.into(),
+                    Ok(s) => Data::new(s),
                     Err(e) => e.into(),
                 }
             }
@@ -121,7 +122,7 @@ impl ContextMapValue {
 #[derive(Clone, Debug)]
 pub enum ContextMapValue {
     Seq(Vec<ContextMapValue>),
-    Map(BTreeMap<Document, ContextMapValue>),
+    Map(BTreeMap<InnerData, ContextMapValue>),
     Node(Arc<Node>),
     Empty,
 }
@@ -132,21 +133,21 @@ impl Default for ContextMapValue {
     }
 }
 
-impl<T: Into<Document>> From<T> for ContextMapValue {
+impl<T: Into<InnerData>> From<T> for ContextMapValue {
     fn from(val: T) -> Self {
         match val.into() {
-            Document::Map(m) => {
+            InnerData::Map(m) => {
                 let mut new_val = BTreeMap::new();
                 for (k, v) in m.into_iter() {
                     new_val.insert(k, v.into());
                 }
                 ContextMapValue::Map(new_val)
             }
-            Document::Seq(s) => {
+            InnerData::Seq(s) => {
                 let new_val: Vec<ContextMapValue> = s.into_iter().map(|i| i.into()).collect();
                 ContextMapValue::Seq(new_val)
             }
-            Document::Newtype(mut d) => d.take().into(),
+            InnerData::Newtype(mut d) => d.take().into(),
             other => ContextMapValue::Node(Arc::new(Data::from(other).into())),
         }
     }
@@ -166,6 +167,6 @@ impl From<Template> for ContextMapValue {
 
 impl From<Data> for ContextMapValue {
     fn from(val: Data) -> Self {
-        ContextMapValue::Node(Arc::new(val.into()))
+        val.into_inner().into()
     }
 }

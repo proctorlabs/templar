@@ -5,10 +5,10 @@ pub enum Node {
     Expr(Vec<Node>),
     Data(Data),
     Scope(Box<Node>),
-    Value(Vec<Document>),
+    Value(Vec<InnerData>),
     Operation(Arc<Operation>),
     Array(Vec<Node>),
-    Map(BTreeMap<Document, Node>),
+    Map(BTreeMap<InnerData, Node>),
 }
 
 impl fmt::Debug for Node {
@@ -37,7 +37,7 @@ impl Node {
             Self::Data(d) => d.clone(),
             Self::Operation(op) => op.exec(ctx),
             Self::Value(a) => {
-                let docs = a.iter().collect::<Vec<&Document>>();
+                let docs = a.iter().collect::<Vec<&InnerData>>();
                 ctx.get_path(&docs)
             }
             Self::Scope(i) => {
@@ -46,11 +46,11 @@ impl Node {
             }
             Self::Array(s) => Data::from_vec(s.iter().map(|n| n.exec(ctx)).collect()),
             Self::Map(m) => {
-                let mut map: BTreeMap<Document, Document> = BTreeMap::new();
+                let mut map: BTreeMap<InnerData, InnerData> = BTreeMap::new();
                 for (key, node) in m.iter() {
-                    match node.exec(ctx).into_result() {
-                        Ok(d) => map.insert(key.clone(), d),
-                        Err(e) => return e.into(),
+                    match node.exec(ctx).into_inner() {
+                        InnerData::Err(e) => return e.into(),
+                        d => map.insert(key.clone(), d),
                     };
                 }
                 map.into()
@@ -60,7 +60,7 @@ impl Node {
                 if res.is_empty() {
                     Data::empty()
                 } else if res.len() == 1 {
-                    res.pop().unwrap()
+                    res.remove(0).unwrap()
                 } else {
                     Data::from_vec(res)
                 }
@@ -79,7 +79,7 @@ impl Node {
         Node::Scope(Box::new(self))
     }
 
-    pub(crate) fn into_document(self) -> Result<Document> {
+    pub(crate) fn into_document(self) -> Result<Data> {
         match self {
             Self::Data(d) => Ok(d.into_result()?),
             _ => Err(TemplarError::RenderFailure(

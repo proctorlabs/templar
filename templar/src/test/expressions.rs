@@ -7,7 +7,7 @@ macro_rules! test_expressions {
             let tmpl = Templar::global().parse_expression($exp)?;
             let context = StandardContext::new();
             let result = tmpl.exec(&context);
-            assert!(result.is_err());
+            assert!(result.is_failed());
             Ok(())
         }
         test_expressions! {
@@ -19,9 +19,9 @@ macro_rules! test_expressions {
         fn $name() -> Result<()> {
             let tmpl = Templar::global().parse_expression($exp)?;
             let context = StandardContext::new();
-            let result = tmpl.exec(&context)?;
-            let cmp: Document = ($res).into();
-            assert_eq!(result, cmp, "{} expression '{}' result -> {:?}", stringify!($name), $exp, result);
+            let result = tmpl.exec(&context);
+            let cmp: InnerData = ($res).into();
+            assert_eq!(result.clone().into_inner(), cmp, "{} expression '{}' result -> {:?}", stringify!($name), $exp, result);
             Ok(())
         }
         test_expressions! {
@@ -33,9 +33,9 @@ macro_rules! test_expressions {
         fn $name() -> Result<()> {
             let tmpl = Templar::global().parse_expression($exp)?;
             let context = StandardContext::new();
-            let result = tmpl.exec(&context)?;
-            let cmp: Document = ($res).into();
-            assert_ne!(result, cmp, "{} expression '{}' result -> {:?}", stringify!($name), $exp, result);
+            let result = tmpl.exec(&context);
+            let cmp: InnerData = ($res).into();
+            assert_ne!(result.clone().into_inner(), cmp, "{} expression '{}' result -> {:?}", stringify!($name), $exp, result);
             Ok(())
         }
         test_expressions! {
@@ -88,7 +88,7 @@ test_expressions! {
     replace: "'this-is-a-thing' | replace('-','_') " == "this_is_a_thing";
 
     // encoding/decoding
-    base64_encode_filter: "'Test' | base64" == "VGVzdA==";
+    base64_encode_filter: "'Test' | base64('encode')" == "VGVzdA==";
     base64_decode_filter: "'VGVzdA==' | base64('decode')" == "Test";
 
     // scripts / commands
@@ -97,7 +97,7 @@ test_expressions! {
     command_var_args: "command('echo', '-n', 'test') | key('stdout')" == "test";
 
     // set
-    test_set: "val = 'hello'" == "";
+    test_set: "val = 'hello'" == InnerData::Unassigned;
     test_set_return: "val = 'hello' ~ val" == "hello";
 
     // HTML Escape

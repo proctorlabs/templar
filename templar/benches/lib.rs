@@ -15,7 +15,7 @@ This is a template.
 "#;
 
 fn exec_expression(template: &Template, context: &impl Context) -> Result<()> {
-    template.exec(context)?;
+    template.exec(context);
     Ok(())
 }
 

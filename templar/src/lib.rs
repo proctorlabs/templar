@@ -94,7 +94,7 @@ Templates vary a lot though and templates that call out to shell commands or do 
 Full API documentation can be found on [docs.rs](https://docs.rs/templar/)
 */
 
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 #[macro_use]
 extern crate lazy_static;
@@ -114,7 +114,7 @@ pub use {
     self::{
         context::{Context, StandardContext},
         error::TemplarError,
-        execution::Data,
+        execution::{Data, InnerData},
         templar::{Templar, TemplarBuilder, Template, TemplateTree},
     },
     unstructured::Document,

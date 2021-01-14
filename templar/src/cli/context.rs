@@ -1,7 +1,7 @@
 use super::*;
 use std::path::PathBuf;
-use templar::Templar;
-use unstructured::Document;
+use templar::{Templar, InnerData};
+// use unstructured::Document;
 
 pub fn build_context(options: &Command) -> Result<StandardContext> {
     let ctx = StandardContext::new();
@@ -19,7 +19,7 @@ pub fn build_context(options: &Command) -> Result<StandardContext> {
     Ok(ctx)
 }
 
-fn parse_data(path: &PathBuf) -> Result<Document> {
+fn parse_data(path: &PathBuf) -> Result<InnerData> {
     let contents = read_file(path)?;
     let ext: String = path
         .extension()

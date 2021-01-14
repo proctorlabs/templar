@@ -14,7 +14,7 @@ impl<'a> ContextWalk<'a> {
         }
     }
 
-    pub fn walk(&'a self, ctx: &impl Context, key: &Document) {
+    pub fn walk(&'a self, ctx: &impl Context, key: &InnerData) {
         let val = self.inner.borrow();
         let mut new_walk = None;
         let mut res = None;
@@ -29,10 +29,10 @@ impl<'a> ContextWalk<'a> {
             new_walk = Some(if res.is_failed() || res.is_empty() {
                 res.into()
             } else {
-                match res.into_result() {
-                    Ok(Document::Map(m)) => m.get(key).cloned().into(),
-                    Ok(other) => other.into(),
-                    Err(e) => e.into(),
+                match res.into_inner() {
+                    InnerData::Map(m) => m.get(key).cloned().into(),
+                    InnerData::Err(e) => e.into(),
+                    other => other.into(),
                 }
             })
         }
@@ -73,8 +73,8 @@ impl<'a> From<Option<&'a ContextMapValue>> for ContextWalkValue<'a> {
     }
 }
 
-impl<'a> From<Document> for ContextWalkValue<'a> {
-    fn from(val: Document) -> Self {
+impl<'a> From<InnerData> for ContextWalkValue<'a> {
+    fn from(val: InnerData) -> Self {
         Self::Owned(Data::from(val).into())
     }
 }
@@ -85,8 +85,8 @@ impl<'a> From<TemplarError> for ContextWalkValue<'a> {
     }
 }
 
-impl<'a> From<Option<Document>> for ContextWalkValue<'a> {
-    fn from(val: Option<Document>) -> Self {
+impl<'a> From<Option<InnerData>> for ContextWalkValue<'a> {
+    fn from(val: Option<InnerData>) -> Self {
         match val {
             Some(v) => v.into(),
             None => Self::None,

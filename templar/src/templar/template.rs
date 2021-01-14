@@ -15,7 +15,6 @@ impl Template {
     ///
     /// ```
     /// # use templar::*;
-    /// # use unstructured::Document;
     /// # let context = StandardContext::new();
     ///
     /// let t = Templar::global().parse_expression("5 + 5")?;
@@ -27,24 +26,23 @@ impl Template {
         self.0.render(ctx)
     }
 
-    /// Execute a template, getting a `Document` from the `unstructured` crate as a result.
-    /// many of the native rust types implement into() on Document making direct comparisons
+    /// Execute a template, getting a `InnerData` from the `unstructured` crate as a result.
+    /// many of the native rust types implement into() on InnerData making direct comparisons
     /// easy.
     ///
     /// # Usage
     ///
     /// ```
     /// # use templar::*;
-    /// # use unstructured::Document;
     /// # let context = StandardContext::new();
     ///
     /// let t = Templar::global().parse_expression("5 + 5")?;
-    /// assert_eq!(t.exec(&context)?, 10i64);
+    /// assert_eq!(*t.exec(&context), 10i64);
     /// # Ok::<(), templar::TemplarError>(())
     /// ```
-    pub fn exec(&self, ctx: &impl Context) -> Result<Document> {
+    pub fn exec(&self, ctx: &impl Context) -> Data {
         //let local_ctx = ctx.create_scope();
-        self.0.exec(ctx).into_result()
+        self.0.exec(ctx)
     }
 
     pub(crate) fn root_node(&self) -> Arc<Node> {
@@ -52,14 +50,14 @@ impl Template {
     }
 }
 
-/// TemplateTree holds the parsed result of a Document tree. This tree of templates
+/// TemplateTree holds the parsed result of a InnerData tree. This tree of templates
 /// can then be loaded directly into a context.
 #[derive(Debug, Clone)]
 pub enum TemplateTree {
     /// This TemplateTree node contains a template. This node type can be converted into a `Template`
     Template(Template),
     /// This TemplateTree node contains a mapping
-    Mapping(Arc<BTreeMap<Document, TemplateTree>>),
+    Mapping(Arc<BTreeMap<InnerData, TemplateTree>>),
     /// This TemplateTree node contains a sequence
     Sequence(Arc<Vec<TemplateTree>>),
 }
@@ -72,7 +70,7 @@ impl Default for TemplateTree {
 
 impl TemplateTree {
     /// Attempt to walk the tree with the specified key
-    pub fn get(&self, key: &Document) -> Option<TemplateTree> {
+    pub fn get(&self, key: &InnerData) -> Option<TemplateTree> {
         match self {
             TemplateTree::Mapping(v) => Some(v[key].clone()),
             _ => None,
@@ -80,7 +78,7 @@ impl TemplateTree {
     }
 
     /// Attempt to walk the tree with the specified path
-    pub fn get_path<T: Into<Document> + Clone>(&self, path: &[T]) -> Option<TemplateTree> {
+    pub fn get_path<T: Into<InnerData> + Clone>(&self, path: &[T]) -> Option<TemplateTree> {
         let mut result = self.clone();
         for key in path.iter() {
             result = result.get(&key.clone().into())?;

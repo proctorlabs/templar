@@ -8,13 +8,13 @@ use std::str;
 
 #[cfg(feature = "json-extension")]
 #[templar_function]
-pub fn json(content: String) -> Result<Document> {
+pub fn json(content: String) -> Result<InnerData> {
     serde_json::from_str(&content).wrap()
 }
 
 #[cfg(feature = "yaml-extension")]
 #[templar_function]
-pub fn yaml(content: String) -> Result<Document> {
+pub fn yaml(content: String) -> Result<InnerData> {
     serde_yaml::from_str(&content).wrap()
 }
 
@@ -33,34 +33,35 @@ pub fn env(env_var: String) -> Result<String> {
 }
 
 pub fn script(args: Data) -> Data {
-    let mut sh_args = vec![Document::String("sh".into()), "-c".into()];
-    match args.into_result() {
-        Ok(Document::Seq(s)) => {
+    let mut sh_args = vec![InnerData::String("sh".into()), "-c".into()];
+    match args.into_result().map(|i| i.into_inner()) {
+        Ok(InnerData::Seq(s)) => {
             for arg in s.iter() {
                 sh_args.push(arg.clone())
             }
         }
-        Ok(other) => sh_args.push(other),
         Err(e) => return e.into(),
+        Ok(other) => sh_args.push(other),
     }
     command(sh_args.into())
 }
 
 pub fn command(args: Data) -> Data {
     let mut sh_args = vec![];
-    match args.into_result() {
-        Ok(Document::Seq(s)) => {
+    match args.into_result().map(|i| i.into_inner()) {
+        Ok(InnerData::Seq(s)) => {
             for arg in s.iter() {
                 sh_args.push(arg.to_string())
             }
         }
-        Ok(other) => sh_args.push(other.to_string()),
         Err(e) => return e.into(),
+        Ok(other) => sh_args.push(other.to_string()),
+        
     }
     let result = Command::new("/usr/bin/env").args(sh_args).output();
     match result {
         Ok(result) => {
-            let mut map = BTreeMap::<Document, Document>::new();
+            let mut map = BTreeMap::<InnerData, InnerData>::new();
             map.insert(
                 "stdout".into(),
                 str::from_utf8(&result.stdout).unwrap_or_default().into(),
@@ -73,7 +74,7 @@ pub fn command(args: Data) -> Data {
                 "status".into(),
                 result.status.code().unwrap_or_default().into(),
             );
-            Document::from(map).into()
+            InnerData::from(map).into()
         }
         Err(e) => TemplarError::from(e).into(),
     }

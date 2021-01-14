@@ -10,7 +10,7 @@ somedict:
 #[test]
 fn run_dynamic_context() -> Result<()> {
     let template = Templar::global().parse_yaml(DYN_CONTEXT)?;
-    let context = StandardContext::new();
+    let context = SharedContext::new();
     context.set(template)?;
     let tmpl: Template = Templar::global().parse_template("{{ somedict.dynamic }}")?;
     let result = tmpl.render(&context)?;

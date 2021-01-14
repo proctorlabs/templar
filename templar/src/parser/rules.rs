@@ -42,7 +42,7 @@ macro_rules! parse_token {
         })?;
     }};
     (nil => $tree:expr) => {
-        $tree.push(Node::Data(Document::Null.into()))?;
+        $tree.push(Node::Data(InnerData::Null.into()))?;
     };
     (args : $rule:expr => $tree:expr) => {
         $tree.push($tree.templar.parse_match($rule.into_inner())?)?;
@@ -77,7 +77,7 @@ macro_rules! parse_token {
     (map : $rule:expr => $tree:expr) => {
         $tree.push({
             let mut res = BTreeMap::new();
-            let mut last_lit = Document::Null;
+            let mut last_lit = Data::empty();
             for pair in $rule.into_inner() {
                 match pair.as_rule() {
                     Rule::literal_cap => last_lit = $tree.templar.parse_match(pair.into_inner())?.into_document()?,
@@ -121,7 +121,7 @@ macro_rules! parse_token {
     }};
     (value : $rule:expr => $tree:expr) => {
         $tree.push({
-            let mut result: Vec<Document> = vec![];
+            let mut result: Vec<InnerData> = vec![];
             for pair in $rule.into_inner() {
                 match pair.as_rule() {
                     Rule::ident => result.push(parse_token!(ident: pair)),

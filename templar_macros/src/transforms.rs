@@ -32,7 +32,7 @@ macro_rules! data_types {
                 match self {
                     $(
                         DataType:: $type (_) => quote! {
-                            Document :: $( $tail )*
+                            InnerData :: $( $tail )*
                         },
                     )*
                 }.into()
@@ -43,7 +43,7 @@ macro_rules! data_types {
 
 data_types! {
     String  {String} ("String" | "&str"),
-    Char    {Char} ("char"),
+    Char    {Char}   ("char"),
     F64     {Number} ("f64"),
     F32     {Number} ("f32"),
     I128    {Number} ("i128" | "isize"),
@@ -100,6 +100,111 @@ fn get_types_from_args(args: &[FnArg]) -> Result<Vec<DataType>, TokenStream2> {
     Ok(result)
 }
 
+fn safe_unwrap(var: FnArg, var_name: String) -> TokenStream2 {
+    let var_name = Ident::new(&var_name, var.span());
+    quote! {
+        let #var = match #var_name .cast() {
+            Some(v) => v,
+            None => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into()
+        };
+    }
+}
+
+fn arg_condition(args: &[FnArg], args_name: &str) -> TokenStream2 {
+    if args.len() > 1 {
+        let args_name = Ident::new(args_name, args[0].span());
+        let arg_count: LitInt = LitInt::new(&args.len().to_string(), args[0].span());
+        quote! {
+            let mut #args_name : Vec<InnerData> = match #args_name .into_inner() {
+                InnerData::Seq(val) => val,
+                InnerData::Err(e) => return e.into(),
+                _ => return TemplarError::RenderFailure("Unexpected execution, arguments must be a sequence".to_string()).into(),
+            };
+
+            if #args_name .len() != #arg_count {
+                return TemplarError::RenderFailure(format!("This method expects {} arguments", #arg_count)).into();
+            }
+        }
+    } else {
+        quote! {}
+    }
+}
+
+fn return_tokens(item_fn: &syn::ItemFn) -> (&std::boxed::Box<syn::Type>, TokenStream2) {
+    // Return type
+    let return_ty = match &item_fn.sig.output {
+        ReturnType::Type(_, ty) => ty,
+        _ => panic!("Return type is required"),
+    };
+
+    // string form of return type, only represents the last segment of the path. e.g. std::string::String would be just "String"
+    let return_ty_string = match &**return_ty {
+        Type::Path(TypePath { path, .. }) => path.segments.iter().last().unwrap().ident.to_string(),
+        _ => {
+            return (
+                return_ty,
+                fail!(return_ty.span(), "This return type is not supported!"),
+            )
+        }
+    };
+
+    (
+        return_ty,
+        match return_ty_string.as_str() {
+            "Result" => quote! {
+                match result {
+                    Ok(result) => Data::new(result),
+                    Err(e) => TemplarError::RenderFailure(format!("{:?}", e)).into(),
+                }
+            },
+            "Option" => quote! {
+                match result {
+                    Some(result) => Data::new(result),
+                    None => Data::empty(),
+                }
+            },
+            _ => quote! {
+                Data::new(result)
+            },
+        },
+    )
+}
+
+fn push_set_variables(
+    target: &mut Vec<TokenStream2>,
+    args_name: &str,
+    data_types: &[DataType],
+    args: &[FnArg],
+) {
+    match args.len() {
+        l if l > 1 => {
+            let args_name = Ident::new(args_name, args[0].span());
+            for (arg, data_type) in args.iter().zip(data_types.iter()) {
+                let dty = data_type.type_token();
+                // println!("{} {:?}", i, data_type); //args.into_result().map(|i| i.into_inner())
+                target.push(quote! {
+                    let #arg = match #args_name .remove(0) {
+                        #dty (val) => val.into(),
+                        _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
+                    };
+                });
+            }
+        }
+        l if l == 1 => {
+            let args_name = Ident::new(&args_name, args[0].span());
+            let arg = args.first().unwrap();
+            let dty = data_types.first().unwrap().type_token();
+            target.push(quote! {
+                let #arg = match #args_name .into_inner() {
+                    #dty (val) => val.into(),
+                    _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
+                };
+            });
+        }
+        _ => {}
+    }
+}
+
 pub fn impl_filter(item_fn: &syn::ItemFn) -> TokenStream {
     let mut orig_fn = item_fn.clone();
 
@@ -112,18 +217,7 @@ pub fn impl_filter(item_fn: &syn::ItemFn) -> TokenStream {
     let vis = &item_fn.vis;
     // The arguments to the function
     let mut args: Vec<FnArg> = item_fn.sig.inputs.iter().cloned().collect();
-
-    // Return type
-    let return_ty = match &item_fn.sig.output {
-        ReturnType::Type(_, ty) => ty,
-        _ => return fail!(item_fn.sig.output.span(), "Return type is required"),
-    };
-
-    // string form of return type, only represents the last segment of the path. e.g. std::string::String would be just "String"
-    let return_ty_string = match &**return_ty {
-        Type::Path(TypePath { path, .. }) => path.segments.iter().last().unwrap().ident.to_string(),
-        _ => return fail!(return_ty.span(), "This return type is not supported!"),
-    };
+    let (return_ty, return_tokens) = return_tokens(item_fn);
 
     if args.is_empty() {
         return fail!(
@@ -139,92 +233,25 @@ pub fn impl_filter(item_fn: &syn::ItemFn) -> TokenStream {
 
     let filter_in = args.remove(0);
     let filter_in_dt = data_types.remove(0);
-    let filter_in_type = filter_in_dt.type_token();
     let filter_in_name = filter_in_dt.name_token();
 
-    let arg_count: LitInt = LitInt::new(&args.len().to_string(), item_fn.sig.ident.span());
+    let arg_condition = arg_condition(&args, "filter_args");
 
-    let arg_condition = if args.len() > 1 {
-        quote! {
-            let mut filter_args: Vec<Document> = match filter_args.into_result() {
-                Ok(Document::Seq(val)) => val,
-                Err(e) => return e.into(),
-                _ => return TemplarError::RenderFailure("Unexpected execution, arguments must be a sequence".to_string()).into(),
-            };
-
-            if filter_args.len() != #arg_count {
-                return TemplarError::RenderFailure(format!("This method expects {} arguments", #arg_count)).into();
-            }
-        }
-    } else {
-        quote! {}
-    };
-
-    let mut varset_tokens: Vec<TokenStream2> = vec![];
-
-    varset_tokens.push(quote! {
-        let #filter_in = match filter_in {
-            #filter_in_type (val) => val.into(),
-            _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into()
-        };
-    });
-
-    match args.len() {
-        l if l > 1 => {
-            for (arg, data_type) in args.iter().zip(data_types.iter()) {
-                let dty = data_type.type_token();
-                // println!("{} {:?}", i, data_type);
-                varset_tokens.push(quote! {
-                    let #arg = match filter_args.remove(0) {
-                        #dty (val) => val.into(),
-                        _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
-                    };
-                });
-            }
-        }
-        l if l == 1 => {
-            let arg = args.first().unwrap();
-            let dty = data_types.first().unwrap().type_token();
-            varset_tokens.push(quote! {
-                let #arg = match filter_args.into_result() {
-                    Ok( #dty (val) ) => val.into(),
-                    _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
-                };
-            });
-        }
-        _ => {}
-    }
+    let mut varset_tokens: Vec<TokenStream2> = vec![safe_unwrap(filter_in, "filter_in".into())];
+    push_set_variables(&mut varset_tokens, "filter_args", &data_types, &args);
 
     let mut fn_call_args: Vec<Ident> = vec![];
     for data_type in data_types.iter() {
         fn_call_args.push(data_type.name_token());
     }
 
-    let return_tokens = match return_ty_string.as_str() {
-        "Result" => quote! {
-            match result {
-                Ok(result) => result.into(),
-                Err(e) => TemplarError::RenderFailure(format!("{:?}", e)).into(),
-            }
-        },
-        "Option" => quote! {
-            match result {
-                Some(result) => result.into(),
-                None => Data::empty(),
-            }
-        },
-        _ => quote! {
-            result.into()
-        },
-    };
-
     let gen = quote! {
         #orig_fn
 
         #vis fn #ident (filter_in: Data, filter_args: Data) -> Data {
-            let filter_in: Document = match filter_in.into_result() {
-                Ok(val) => val,
-                Err(e) => return e.into(),
+            let filter_in: InnerData = match filter_in .into_inner() {
+                InnerData::Err(e) => return e.into(),
+                val => val,
             };
 
             #arg_condition
@@ -253,101 +280,26 @@ pub fn impl_function(item_fn: &syn::ItemFn) -> TokenStream {
     let vis = &item_fn.vis;
     // The arguments to the function
     let args: Vec<FnArg> = item_fn.sig.inputs.iter().cloned().collect();
-
-    // Return type
-    let return_ty = match &item_fn.sig.output {
-        ReturnType::Type(_, ty) => ty,
-        _ => return fail!(item_fn.sig.output.span(), "Return type is required"),
-    };
-
-    // string form of return type, only represents the last segment of the path. e.g. std::string::String would be just "String"
-    let return_ty_string = match &**return_ty {
-        Type::Path(TypePath { path, .. }) => path.segments.iter().last().unwrap().ident.to_string(),
-        _ => return fail!(return_ty.span(), "This return type is not supported!"),
-    };
+    let (return_ty, return_tokens) = return_tokens(item_fn);
 
     let data_types = match get_types_from_args(&args) {
         Ok(val) => val,
         Err(e) => return e.into(),
     };
 
-    let arg_count: LitInt = LitInt::new(&args.len().to_string(), item_fn.sig.ident.span());
-
-    let arg_condition = if args.len() > 1 {
-        quote! {
-            let mut args: Vec<Document> = match args {
-                Document::Seq(val) => val,
-                _ => return TemplarError::RenderFailure("Unexpected execution, arguments must be a sequence".to_string()).into(),
-            };
-
-            if args.len() != #arg_count {
-                return TemplarError::RenderFailure(format!("This method expects {} arguments", #arg_count)).into();
-            }
-        }
-    } else {
-        quote! {}
-    };
-
+    let arg_condition = arg_condition(&args, "args");
     let mut varset_tokens: Vec<TokenStream2> = vec![];
-
-    match args.len() {
-        l if l > 1 => {
-            for (arg, data_type) in args.iter().zip(data_types.iter()) {
-                let dty = data_type.type_token();
-                // println!("{} {:?}", i, data_type);
-                varset_tokens.push(quote! {
-                    let #arg = match args.remove(0) {
-                        #dty (val) => val.into(),
-                        _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
-                    };
-                });
-            }
-        }
-        l if l == 1 => {
-            let arg = args.first().unwrap();
-            let dty = data_types.first().unwrap().type_token();
-            varset_tokens.push(quote! {
-                let #arg = match args {
-                    #dty (val) => val.into(),
-                    _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
-                };
-            });
-        }
-        _ => {}
-    }
+    push_set_variables(&mut varset_tokens, "args", &data_types, &args);
 
     let mut fn_call_args: Vec<Ident> = vec![];
     for data_type in data_types.iter() {
         fn_call_args.push(data_type.name_token());
     }
 
-    let return_tokens = match return_ty_string.as_str() {
-        "Result" => quote! {
-            match result {
-                Ok(result) => result.into(),
-                Err(e) => TemplarError::RenderFailure(format!("{:?}", e)).into(),
-            }
-        },
-        "Option" => quote! {
-            match result {
-                Some(result) => result.into(),
-                None => Data::empty(),
-            }
-        },
-        _ => quote! {
-            result.into()
-        },
-    };
-
     let gen = quote! {
         #orig_fn
 
         #vis fn #ident (args: Data) -> Data {
-            let args: Document = match args.into_result() {
-                Ok(val) => val,
-                Err(e) => return e.into(),
-            };
-
             #arg_condition
 
             #( #varset_tokens )*

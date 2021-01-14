@@ -13,11 +13,11 @@ impl<'a> ScopedContext<'a> {
 }
 
 impl<'a> Context for ScopedContext<'a> {
-    fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
+    fn set_path_inner(&self, path: &[&InnerData], doc: ContextMapValue) -> Result<()> {
         self.1.borrow_mut().set(doc, path)
     }
 
-    fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data {
+    fn get_path_inner(&self, path: &[&InnerData], ctx: &impl Context) -> Data {
         let local = self.1.borrow().exec(ctx, path);
         if local.is_empty() {
             self.0.get_path_inner(path, ctx)

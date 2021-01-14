@@ -14,16 +14,16 @@ impl Default for StandardContext {
 impl StandardContext {
     /// Create a new empty standard context
     pub fn new() -> Self {
-        StandardContext(Rc::new(RefCell::new(ContextMap::new(Document::Null))))
+        StandardContext(Rc::new(RefCell::new(ContextMap::new(InnerData::Null))))
     }
 }
 
 impl Context for StandardContext {
-    fn set_path_inner(&self, path: &[&Document], doc: ContextMapValue) -> Result<()> {
+    fn set_path_inner(&self, path: &[&InnerData], doc: ContextMapValue) -> Result<()> {
         self.0.borrow_mut().set(doc, path)
     }
 
-    fn get_path_inner(&self, path: &[&Document], ctx: &impl Context) -> Data {
+    fn get_path_inner(&self, path: &[&InnerData], ctx: &impl Context) -> Data {
         self.0.borrow().exec(ctx, path)
     }
 

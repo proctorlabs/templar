@@ -13,7 +13,7 @@ fn parse_yml_template() -> Result<()> {
     let template = Templar::global().parse_yaml(BASIC)?;
     let context = StandardContext::new();
     context.set({
-        let mut doc = Document::default();
+        let mut doc = InnerData::default();
         doc["one"]["two"]["three"] = "val".into();
         doc
     })?;

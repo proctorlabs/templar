@@ -103,7 +103,7 @@ macro_rules! simple_pipe {
 
 macro_rules! number {
     ($doc:ident) => {
-        match $doc.cast::<i64>() {
+        match $doc.into_inner().cast::<i64>() {
             Some(i) => i,
             None => {
                 return TemplarError::RenderFailure("Math operations require numeric types".into())
@@ -119,22 +119,22 @@ simple_pipe! {
     divide(l, r) -> { number!(l) / number!(r) };
     multiply(l, r) -> { number!(l) * number!(r) };
     modulus(l, r) -> { number!(l) % number!(r) };
-    and(l, r) -> { l.cast::<bool>().unwrap_or_default() && r.cast::<bool>().unwrap_or_default() };
-    or(l, r) -> { l.cast::<bool>().unwrap_or_default() || r.cast::<bool>().unwrap_or_default() };
-    equals(l, r) -> { l == r };
-    not_equals(l, r) -> { l != r };
-    greater_than(l, r) -> { l > r };
-    greater_than_equals(l, r) -> { l >= r };
-    less_than(l, r) -> { l < r };
-    less_than_equals(l, r) -> { l <= r };
+    and(l, r) -> { l.into_inner().cast::<bool>().unwrap_or_default() && r.into_inner().cast::<bool>().unwrap_or_default() };
+    or(l, r) -> { l.into_inner().cast::<bool>().unwrap_or_default() || r.into_inner().cast::<bool>().unwrap_or_default() };
+    equals(l, r) -> { l.into_inner() == r.into_inner() };
+    not_equals(l, r) -> { l.into_inner() != r.into_inner() };
+    greater_than(l, r) -> { l.into_inner() > r.into_inner() };
+    greater_than_equals(l, r) -> { l.into_inner() >= r.into_inner() };
+    less_than(l, r) -> { l.into_inner() < r.into_inner() };
+    less_than_equals(l, r) -> { l.into_inner() <= r.into_inner() };
 }
 
 fn if_then(ctx: &ContextWrapper, cnd: &Node, p: &Node, n: &Node) -> Data {
-    let cnd = cnd.exec(ctx).into_result();
+    let cnd = cnd.exec(ctx).into_inner();
     match cnd {
-        Ok(Document::Bool(true)) => p.exec(ctx),
-        Ok(Document::Bool(false)) => n.exec(ctx),
-        Err(e) => e.into(),
+        InnerData::Bool(true) => p.exec(ctx),
+        InnerData::Bool(false) => n.exec(ctx),
+        InnerData::Err(e) => Data::new(InnerData::Err(e.clone())),
         _ => TemplarError::RenderFailure("If condition must evaluate to boolean!".into()).into(),
     }
 }
@@ -162,10 +162,10 @@ fn for_loop(ctx: &ContextWrapper, val_name: &Node, array_path: &Node, exec: &Nod
     let mut array = array_exec.unwrap();
 
     // Now we get the path for the scope-local value and iterate whatever the result is
-    match (val_name, &mut array) {
-        (Node::Value(set_path), Document::Seq(items)) => {
+    match (val_name, &mut array.inner_data_mut()) {
+        (Node::Value(set_path), InnerData::Seq(items)) => {
             let mut result = String::new();
-            let ref_vec: Vec<&Document> = set_path.iter().collect();
+            let ref_vec: Vec<&InnerData> = set_path.iter().collect();
             for item in items.drain(0..) {
                 let r = ctx.set_path(&ref_vec, item);
                 if r.is_err() {
@@ -179,14 +179,14 @@ fn for_loop(ctx: &ContextWrapper, val_name: &Node, array_path: &Node, exec: &Nod
             }
             result.into()
         }
-        (Node::Value(set_path), Document::Map(items)) => {
+        (Node::Value(set_path), InnerData::Map(items)) => {
             let mut result = String::new();
-            let ref_vec: Vec<&Document> = set_path.iter().collect();
+            let ref_vec: Vec<&InnerData> = set_path.iter().collect();
             for (k, v) in items.iter_mut() {
                 let mut entry = BTreeMap::new();
                 entry.insert("key".into(), k.clone()); //cloning the keys is better than rebalancing the tree
                 entry.insert("value".into(), v.take());
-                let r = ctx.set_path(&ref_vec, Document::from(entry));
+                let r = ctx.set_path(&ref_vec, InnerData::from(entry));
                 if r.is_err() {
                     return Data::check(r);
                 }
@@ -199,7 +199,7 @@ fn for_loop(ctx: &ContextWrapper, val_name: &Node, array_path: &Node, exec: &Nod
             result.into()
         }
         (Node::Value(ref set_path), _) => {
-            let ref_vec: Vec<&Document> = set_path.iter().collect();
+            let ref_vec: Vec<&InnerData> = set_path.iter().collect();
             let r = ctx.set_path(&ref_vec, array);
             if r.is_err() {
                 return Data::check(r);
@@ -217,7 +217,7 @@ fn set(ctx: &ContextWrapper, left: &Node, right: &Node) -> Data {
     match (left, val) {
         (_, Err(e)) => e.into(),
         (Node::Value(path), Ok(ref mut val)) => {
-            let ref_vec: Vec<&Document> = path.iter().collect();
+            let ref_vec: Vec<&InnerData> = path.iter().collect();
             Data::check(ctx.set_path(&ref_vec, val.take()))
         }
         (eval, Ok(ref mut val)) => {
