@@ -1,0 +1,12 @@
+thing := true;
+otherthing ?= "value";
+otherthing := "contents";
+
+@when()
+task stuff() {
+    task contents
+}
+
+@after()
+@when()
+task thing(arg,arg) {}

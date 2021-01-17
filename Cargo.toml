@@ -1,5 +1,5 @@
 [workspace]
-members = ["templar", "templar_macros"]
+members = ["templar", "templar_macros", "valkyrie"]
 
 [profile.release]
 opt-level = 3
