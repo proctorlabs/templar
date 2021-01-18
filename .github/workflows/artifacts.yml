@@ -93,7 +93,7 @@ jobs:
       - name: Upload Windows artifact
         uses: actions/upload-artifact@master
         with:
-          name: '${{ matrix.target }}'
+          name: '${{ matrix.file-tag }}'
           path: target/${{ matrix.target }}/release/*.exe
 
   build-macos:
