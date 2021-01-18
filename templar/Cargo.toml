@@ -9,7 +9,7 @@ repository = "https://github.com/proctorlabs/templar"
 keywords = ["cli", "template", "templating", "handlebars", "jinja"]
 categories = ["template-engine"]
 license = "MIT/Apache-2.0"
-readme = "README.md"
+readme = "../README.md"
 exclude = [".github/**", "docs/**"]
 workspace = "../"
 
@@ -26,7 +26,7 @@ section = "utility"
 priority = "optional"
 
 [dependencies]
-templar_macros = { path = "../templar_macros" }
+templar_macros = { path = "../templar_macros", version = "0.5.0" }
 
 # General dependencies
 unstructured = { version = "0.5.1", default_features = false, features = [] }
