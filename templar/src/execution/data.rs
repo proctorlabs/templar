@@ -1,14 +1,14 @@
 use super::*;
-use unstructured::{Unstructured, UnstructuredDataTrait};
 use derive_more::{Deref, DerefMut};
+use unstructured::{Unstructured, UnstructuredDataTrait};
 
 pub type InnerData = Unstructured<Data>;
 
 #[derive(Clone, Debug)]
 pub enum OtherData {
     // Expr(Vec<NodeData>),
-    // Scope(Box<NodeData>),
-    // Operation(Arc<Operation>),
+// Scope(Box<NodeData>),
+// Operation(Arc<Operation>),
 }
 
 impl fmt::Display for OtherData {
@@ -26,7 +26,7 @@ impl fmt::Display for OtherData {
 #[derive(Debug, Clone, Deref, DerefMut)]
 pub struct Data {
     #[deref]
-    inner: InnerData
+    inner: InnerData,
 }
 
 impl fmt::Display for Data {
@@ -44,19 +44,23 @@ impl<'a> Data {
     /// Create a new empty result
     #[inline]
     pub fn empty() -> Data {
-        Data { inner: InnerData::Unassigned }
+        Data {
+            inner: InnerData::Unassigned,
+        }
     }
 
     /// Create new data value
     pub fn new<T: Into<InnerData>>(inner: T) -> Self {
-        Self { inner: inner.into() }
+        Self {
+            inner: inner.into(),
+        }
     }
 
     /// Get reference to the inner value
     pub fn inner_data(&self) -> &InnerData {
         &self.inner
     }
-    
+
     /// Get reference to the inner value
     pub fn inner_data_mut(&mut self) -> &mut InnerData {
         &mut self.inner
@@ -121,7 +125,7 @@ impl<'a> Data {
     pub fn into_result(self) -> Result<Self> {
         match self.inner {
             InnerData::Err(e) => Err(e),
-            dat => Ok(Self { inner: dat })
+            dat => Ok(Self { inner: dat }),
         }
     }
 
@@ -134,15 +138,17 @@ impl<'a> Data {
     pub fn to_result(&'a self) -> Result<&'a InnerData> {
         match &self.inner {
             InnerData::Err(e) => Err(e.clone()),
-            ref dat => Ok(dat)
+            ref dat => Ok(dat),
         }
     }
 
     // /// Create Data from a result
     pub fn from_result(result: Result<InnerData>) -> Data {
         match result {
-            Ok( inner ) => Data { inner },
-            Err(e) => Data { inner: InnerData::Err(e) },
+            Ok(inner) => Data { inner },
+            Err(e) => Data {
+                inner: InnerData::Err(e),
+            },
         }
     }
 
@@ -172,6 +178,8 @@ impl<T: Into<InnerData>> From<T> for Data {
 impl From<TemplarError> for Data {
     #[inline]
     fn from(error: TemplarError) -> Self {
-        Data { inner: InnerData::Err(error) }
+        Data {
+            inner: InnerData::Err(error),
+        }
     }
 }

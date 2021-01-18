@@ -107,8 +107,10 @@ impl ContextMapValue {
                 result.into()
             }
             ContextMapValue::Seq(s) => {
-                let result: Result<Vec<InnerData>> =
-                    s.iter().map(|v| Ok(v.exec(ctx).into_result()?.into_inner())).collect();
+                let result: Result<Vec<InnerData>> = s
+                    .iter()
+                    .map(|v| Ok(v.exec(ctx).into_result()?.into_inner()))
+                    .collect();
                 match result {
                     Ok(s) => Data::new(s),
                     Err(e) => e.into(),

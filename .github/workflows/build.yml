@@ -10,31 +10,13 @@ jobs:
         include:
           - os: ubuntu-latest
             toolchain: stable
-            target: x86_64-unknown-linux-gnu
-            use-cross: false
-            run-tests: true
-            ext: ''
-          - os: ubuntu-latest
-            toolchain: stable
             target: x86_64-unknown-linux-musl
             use-cross: true
             run-tests: false
             ext: ''
           - os: ubuntu-latest
             toolchain: stable
-            target: aarch64-unknown-linux-gnu
-            use-cross: true
-            run-tests: false
-            ext: ''
-          - os: ubuntu-latest
-            toolchain: stable
             target: aarch64-unknown-linux-musl
-            use-cross: true
-            run-tests: false
-            ext: ''
-          - os: ubuntu-latest
-            toolchain: stable
-            target: armv7-unknown-linux-gnueabihf
             use-cross: true
             run-tests: false
             ext: ''
@@ -47,12 +29,6 @@ jobs:
           - os: windows-latest
             toolchain: stable-msvc
             target: x86_64-pc-windows-msvc
-            use-cross: false
-            run-tests: false
-            ext: '.exe'
-          - os: windows-latest
-            toolchain: stable
-            target: x86_64-pc-windows-gnu
             use-cross: false
             run-tests: false
             ext: '.exe'

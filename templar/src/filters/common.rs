@@ -4,7 +4,7 @@ use crate::*;
 use std::str;
 
 pub fn length(value: Data, _: Data) -> Data {
-    match value .into_inner() {
+    match value.into_inner() {
         InnerData::Err(e) => e.into(),
         InnerData::Seq(arr) => (arr.len() as u64).into(),
         InnerData::String(s) => (s.chars().count() as u64).into(),
@@ -69,7 +69,13 @@ pub fn split(value: Data, args: Data) -> Data {
         _ => "\n".to_string(),
     };
     match value.into_result() {
-        Ok(d) => InnerData::Seq(d.render().unwrap_or_default().split(&delim).map(|s| s.into()).collect()),
+        Ok(d) => InnerData::Seq(
+            d.render()
+                .unwrap_or_default()
+                .split(&delim)
+                .map(|s| s.into())
+                .collect(),
+        ),
         _ => InnerData::Seq(vec![]),
     }
     .into()
@@ -95,7 +101,6 @@ pub fn join(value: Data, args: Data) -> Data {
             .into(),
         InnerData::Err(e) => e.into(),
         v => v.into(),
-        
     }
 }
 

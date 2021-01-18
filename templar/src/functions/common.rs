@@ -56,7 +56,6 @@ pub fn command(args: Data) -> Data {
         }
         Err(e) => return e.into(),
         Ok(other) => sh_args.push(other.to_string()),
-        
     }
     let result = Command::new("/usr/bin/env").args(sh_args).output();
     match result {

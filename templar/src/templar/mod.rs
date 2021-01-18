@@ -154,7 +154,10 @@ impl Parseable<TemplateTree> for &InnerData {
                 map.iter()
                     .map(|(k, v)| {
                         Ok((
-                            templar.parse::<Self, Template>(k)?.exec(&default_context).into_inner(),
+                            templar
+                                .parse::<Self, Template>(k)?
+                                .exec(&default_context)
+                                .into_inner(),
                             templar.parse(v)?,
                         ))
                     })
