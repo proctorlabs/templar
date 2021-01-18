@@ -25,8 +25,6 @@ fn custom_filter_repeater() -> Result<(), TemplarError> {
     Ok(())
 }
 
-
-
 // use unstructured::UnstructuredDataTrait;
 
 // #[derive(Clone)]

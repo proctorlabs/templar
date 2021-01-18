@@ -1,6 +1,6 @@
 use super::*;
 use std::path::PathBuf;
-use templar::{Templar, InnerData};
+use templar::{InnerData, Templar};
 // use unstructured::Document;
 
 pub fn build_context(options: &Command) -> Result<StandardContext> {

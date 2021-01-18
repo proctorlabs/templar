@@ -1,4 +1,4 @@
-use templar::{Data, StandardContext, TemplarBuilder, TemplarError, InnerData};
+use templar::{Data, InnerData, StandardContext, TemplarBuilder, TemplarError};
 
 #[macro_use]
 extern crate templar_macros;
