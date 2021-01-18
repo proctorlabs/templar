@@ -10,18 +10,24 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-            build-options: []
           - target: x86_64-unknown-linux-musl
-            build-options: []
-          - target: aarch64-unknown-linux-gnu
-            build-options: [cross]
+            file-tag: "x86_64"
+            strip: "x86_64-linux-musl-strip"
+          - target: i586-unknown-linux-musl
+            file-tag: "i586"
+            strip: "i586-linux-musl-strip"
+          - target: i686-unknown-linux-musl
+            file-tag: "i686"
+            strip: "i686-linux-musl-strip"
           - target: aarch64-unknown-linux-musl
-            build-options: [cross]
-          - target: armv7-unknown-linux-gnueabihf
-            build-options: [cross]
+            file-tag: "aarch64"
+            strip: "aarch64-linux-musl-strip"
           - target: armv7-unknown-linux-musleabihf
-            build-options: [cross]
+            file-tag: "armv7l"
+            strip: "arm-linux-musleabihf-strip"
+          - target: arm-unknown-linux-musleabihf
+            file-tag: "armv6"
+            strip: "arm-linux-musleabihf-strip"
 
     runs-on: 'ubuntu-latest'
 
@@ -40,14 +46,18 @@ jobs:
       - name: 'Build binary for ${{ matrix.target }}'
         uses: actions-rs/cargo@v1
         with:
-          use-cross: ${{ contains(matrix.build-options, 'cross') }}
+          use-cross: true
           command: build
           args: '--all-features --target ${{ matrix.target }} --release'
+
+      - name: Strip binary
+        run: >-
+          docker run -v $PWD/:/work rustembedded/cross:${{ matrix.target }}-0.2.1 ${{ matrix.strip }} /work/target/${{ matrix.target }}/release/templar
 
       - name: Upload artifact
         uses: actions/upload-artifact@master
         with:
-          name: ${{ matrix.target }}
+          name: ${{ matrix.file-tag }}
           path: target/${{ matrix.target }}/release/templar
 
   build-windows:
@@ -58,8 +68,7 @@ jobs:
         include:
           - toolchain: stable-msvc
             target: x86_64-pc-windows-msvc
-          - toolchain: stable
-            target: x86_64-pc-windows-gnu
+            file-tag: win-x86_64
 
     runs-on: 'windows-latest'
 
@@ -110,7 +119,7 @@ jobs:
       - name: Upload Mac artifact
         uses: actions/upload-artifact@master
         with:
-          name: x86_64-apple-darwin
+          name: darwin-x86_64
           path: target/release/templar
 
   new-release:
@@ -139,13 +148,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-          - target: x86_64-unknown-linux-musl
-          - target: aarch64-unknown-linux-gnu
-          - target: aarch64-unknown-linux-musl
-          - target: armv7-unknown-linux-gnueabihf
-          - target: armv7-unknown-linux-musleabihf
-          - target: x86_64-apple-darwin
+          - target: x86_64
+          - target: i586
+          - target: i686
+          - target: aarch64
+          - target: armv7l
+          - target: armv6
+          - target: darwin-x86_64
 
     steps:
       - name: Pull ${{ matrix.target }}
@@ -176,8 +185,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: x86_64-pc-windows-msvc
-          - target: x86_64-pc-windows-gnu
+          - target: win-x86_64
 
     steps:
       - name: Pull ${{ matrix.target }}
