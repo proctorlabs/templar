@@ -10,3 +10,5 @@ Cargo.lock
 .cargo/credentials
 
 .env
+
+gen.pest

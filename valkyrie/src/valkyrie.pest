@@ -1,0 +1,23 @@
+// Base file
+file = _{ SOI ~ buildfile_content* ~ EOI }
+buildfile_content = _{ ws ~ (task_block | set_value | set_template) ~ ws }
+
+// Top level constructs
+task_block = { annotation* ~ "task" ~ wsp ~ ident ~ args ~ ws ~ curly_block }
+set_value = { ident ~ ws ~ ":=" ~ ws ~ literal ~ ws ~ end_statement }
+set_template = { ident ~ ws ~ "?=" ~ ws ~ string_lit ~ ws ~ end_statement }
+
+// Blocks
+curly_block = _{ "{" ~ ws ~ block_content ~ ws ~ "}" }
+block_content = { (!"}" ~ ANY)* }
+
+// Annotations
+annotation = _{ ws ~ (annotation_when | annotation_produces | annotation_after | annotation_always | annotation_lang) ~ ws }
+annotation_when = { "@when" ~ ws ~ "(" ~ (!")" ~ ANY)* ~ ")" }
+annotation_produces = { "@produces" ~ ws ~ "(" ~ (!")" ~ ANY)* ~ ")" }
+annotation_after = { "@after" ~ ws ~ "(" ~ (!")" ~ ANY)* ~ ")" }
+annotation_always = { "@always" ~ ws ~ "(" ~ (!")" ~ ANY)* ~ ")" }
+annotation_lang = { "@lang" ~ ws ~ "(" ~ (!")" ~ ANY)* ~ ")" }
+
+// Flow control
+end_statement = _{ ";" }

@@ -1,4 +1,5 @@
 wsc = _{ " " | "\t" | "\n" | "\r" }
+wsp = _{ wsc+ }
 ws = _{ wsc* }
 
 // A whole template, whitespace on either end will be trimmed
