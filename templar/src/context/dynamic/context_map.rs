@@ -15,7 +15,6 @@ impl ContextMap {
     pub fn set<T: Into<ContextMapValue>>(&mut self, value: T, path: &[&InnerData]) -> Result<()> {
         if path.is_empty() {
             let val: ContextMapValue = value.into();
-            println!("{:?}", val);
             if let ContextMapValue::Map(map) = val {
                 for (k, v) in map.into_iter() {
                     self.root.insert(k, v);

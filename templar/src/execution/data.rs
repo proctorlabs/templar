@@ -29,11 +29,11 @@ pub struct Data {
     inner: InnerData,
 }
 
-impl fmt::Display for Data {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<Node>")
-    }
-}
+// impl fmt::Display for Data {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "<Node>")
+//     }
+// }
 
 impl UnstructuredDataTrait for Data {
     type ErrorType = TemplarError;
