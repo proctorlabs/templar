@@ -7,8 +7,8 @@ pub type InnerData = Unstructured<Data>;
 #[derive(Clone, Debug)]
 pub enum OtherData {
     // Expr(Vec<NodeData>),
-// Scope(Box<NodeData>),
-// Operation(Arc<Operation>),
+    // Scope(Box<NodeData>),
+    // Operation(Arc<Operation>),
 }
 
 impl fmt::Display for OtherData {
@@ -28,12 +28,6 @@ pub struct Data {
     #[deref]
     inner: InnerData,
 }
-
-// impl fmt::Display for Data {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "<Node>")
-//     }
-// }
 
 impl UnstructuredDataTrait for Data {
     type ErrorType = TemplarError;
@@ -95,29 +89,6 @@ impl<'a> Data {
     #[inline]
     pub fn is_empty(&self) -> bool {
         matches!(self.inner, InnerData::Unassigned)
-    }
-
-    /// Unwrap the data contents
-    ///
-    /// # PANIC!
-    ///
-    /// This will panic if this data struct is empty or contains an error
-    #[inline]
-    pub fn unwrap(self) -> Self {
-        self
-    }
-
-    /// Unwrap the data error
-    ///
-    /// # PANIC!
-    ///
-    /// This will panic if this data struct is empty or does not contain an error
-    #[inline]
-    pub fn unwrap_err(self) -> TemplarError {
-        match self.inner {
-            InnerData::Err(e) => e,
-            _ => panic!("Not an error!"),
-        }
     }
 
     /// Convert the data into a Result<Document>.

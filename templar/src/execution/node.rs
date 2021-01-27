@@ -60,7 +60,7 @@ impl Node {
                 if res.is_empty() {
                     Data::empty()
                 } else if res.len() == 1 {
-                    res.remove(0).unwrap()
+                    res.remove(0)
                 } else {
                     Data::from_vec(res)
                 }

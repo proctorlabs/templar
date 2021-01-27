@@ -86,6 +86,7 @@ test_expressions! {
     concat_multiple: "'one ' ~ 'two ' ~ 'three'" == "one two three";
     concat_non_string: "'one' ~ 1 ~ true" == "one1true";
     replace: "'this-is-a-thing' | replace('-','_') " == "this_is_a_thing";
+    truncate: "'this-is-a-thing' | truncate(5) " == "this-";
 
     // encoding/decoding
     base64_encode_filter: "'Test' | base64('encode')" == "VGVzdA==";

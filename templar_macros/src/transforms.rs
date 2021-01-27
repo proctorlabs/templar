@@ -7,7 +7,7 @@ use quote::*;
 use syn::{FnArg, Ident, LitInt, Pat, PatIdent, ReturnType, Type, TypePath};
 
 macro_rules! data_types {
-    ( $( $type:ident { $( $tail:tt )* } ( $( $tystr:tt )* ) , )* ) => {
+    ( $( $type:ident { $( $tail:tt )* } ( $( $tystr:tt )* ) ( $( $dorender:tt )* ) , )* ) => {
         #[derive(Debug)]
         enum DataType {
             $( $type (Ident), )*
@@ -37,25 +37,33 @@ macro_rules! data_types {
                     )*
                 }.into()
             }
+
+            pub fn do_render(&self) -> bool {
+                match self {
+                    $(
+                        DataType:: $type (_) => $( $dorender )*,
+                    )*
+                }.into()
+            }
         }
     };
 }
 
 data_types! {
-    String  {String} ("String" | "&str"),
-    Char    {Char}   ("char"),
-    F64     {Number} ("f64"),
-    F32     {Number} ("f32"),
-    I128    {Number} ("i128" | "isize"),
-    I64     {Number} ("i64"),
-    I32     {Number} ("i32"),
-    I16     {Number} ("i16"),
-    I8      {Number} ("i8"),
-    U128    {Number} ("u128" | "usize"),
-    U64     {Number} ("u64"),
-    U32     {Number} ("u32"),
-    U16     {Number} ("u16"),
-    U8      {Number} ("u8"),
+    String  {String} ("String" | "&str") (true),
+    Char    {Char}   ("char") (false),
+    F64     {Number} ("f64") (false),
+    F32     {Number} ("f32") (false),
+    I128    {Number} ("i128" | "isize") (false),
+    I64     {Number} ("i64") (false),
+    I32     {Number} ("i32") (false),
+    I16     {Number} ("i16") (false),
+    I8      {Number} ("i8") (false),
+    U128    {Number} ("u128" | "usize") (false),
+    U64     {Number} ("u64") (false),
+    U32     {Number} ("u32") (false),
+    U16     {Number} ("u16") (false),
+    U8      {Number} ("u8") (false),
 }
 
 macro_rules! fail {
@@ -100,13 +108,22 @@ fn get_types_from_args(args: &[FnArg]) -> Result<Vec<DataType>, TokenStream2> {
     Ok(result)
 }
 
-fn safe_unwrap(var: FnArg, var_name: String) -> TokenStream2 {
+fn safe_unwrap(var: FnArg, var_name: String, dt: DataType) -> TokenStream2 {
     let var_name = Ident::new(&var_name, var.span());
-    quote! {
-        let #var = match #var_name .cast() {
-            Some(v) => v,
-            None => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into()
-        };
+    if dt.do_render() {
+        quote! {
+            let #var = match Data::new( #var_name ).render() {
+                Ok(v) => v,
+                Err(e) => return e.into(),
+            };
+        }
+    } else {
+        quote! {
+            let #var = match #var_name .cast() {
+                Some(v) => v,
+                None => return TemplarError::RenderFailure(format!("Unexpected type in argument2")).into()
+            };
+        }
     }
 }
 
@@ -181,25 +198,45 @@ fn push_set_variables(
             let args_name = Ident::new(args_name, args[0].span());
             for (arg, data_type) in args.iter().zip(data_types.iter()) {
                 let dty = data_type.type_token();
-                // println!("{} {:?}", i, data_type); //args.into_result().map(|i| i.into_inner())
-                target.push(quote! {
-                    let #arg = match #args_name .remove(0) {
-                        #dty (val) => val.into(),
-                        _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
-                    };
-                });
+                let do_render = data_type.do_render();
+                if do_render {
+                    target.push(quote! {
+                        let #arg = match Data::new(#args_name .remove(0)).render() {
+                            Ok(val) => val,
+                            Err(e) => return e.into(),
+                        };
+                    });
+                } else {
+                    target.push(quote! {
+                        let #arg = match #args_name .remove(0) {
+                            #dty (val) => val.into(),
+                            _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
+                        };
+                    });
+                }
             }
         }
         l if l == 1 => {
             let args_name = Ident::new(&args_name, args[0].span());
             let arg = args.first().unwrap();
-            let dty = data_types.first().unwrap().type_token();
-            target.push(quote! {
-                let #arg = match #args_name .into_inner() {
-                    #dty (val) => val.into(),
-                    _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
-                };
-            });
+            let dty = data_types.first().unwrap();
+            let do_render = dty.do_render();
+            let dty = dty.type_token();
+            if do_render {
+                target.push(quote! {
+                    let #arg = match #args_name .render() {
+                        Ok(val) => val,
+                        Err(e) => return e.into(),
+                    };
+                });
+            } else {
+                target.push(quote! {
+                    let #arg = match #args_name .into_inner() {
+                        #dty (val) => val.into(),
+                        _ => return TemplarError::RenderFailure(format!("Unexpected type in argument")).into(),
+                    };
+                });
+            }
         }
         _ => {}
     }
@@ -237,7 +274,8 @@ pub fn impl_filter(item_fn: &syn::ItemFn) -> TokenStream {
 
     let arg_condition = arg_condition(&args, "filter_args");
 
-    let mut varset_tokens: Vec<TokenStream2> = vec![safe_unwrap(filter_in, "filter_in".into())];
+    let mut varset_tokens: Vec<TokenStream2> =
+        vec![safe_unwrap(filter_in, "filter_in".into(), filter_in_dt)];
     push_set_variables(&mut varset_tokens, "filter_args", &data_types, &args);
 
     let mut fn_call_args: Vec<Ident> = vec![];

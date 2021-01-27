@@ -65,6 +65,7 @@ builtin_filters! {
     "escape_html": common::escape_html;
     "e": common::escape_html;
     "replace": common::replace;
+    "truncate": common::truncate;
 
     #[cfg(feature = "yaml-extension")]
     "yaml": common::yaml;

@@ -143,12 +143,8 @@ pub fn yaml(value: Data, _: Data) -> Data {
     }
 }
 
-pub fn string(value: Data, _: Data) -> Data {
-    match value.render() {
-        Ok(val) => val.into(),
-        Err(e) => e.into(),
-    }
-}
+#[templar_filter]
+pub fn string(in_string: String) -> String { in_string }
 
 pub fn key(value: Data, args: Data) -> Data {
     if args.is_empty() || args.is_failed() {
@@ -203,4 +199,11 @@ pub fn require(value: Data, _: Data) -> Data {
 #[templar_filter]
 pub fn replace(filter_in: String, old: String, new: String) -> String {
     filter_in.replace(&old, &new)
+}
+
+#[templar_filter]
+pub fn truncate(filter_in: String, size: u64) -> String {
+    let mut res = filter_in;
+    res.truncate(size as usize);
+    res
 }

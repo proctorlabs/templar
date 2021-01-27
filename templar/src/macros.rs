@@ -13,7 +13,7 @@ macro_rules! data_unwrap {
         if d.is_empty() || d.is_failed() {
             return d;
         }
-        d.unwrap()
+        d
     }};
 }
 
